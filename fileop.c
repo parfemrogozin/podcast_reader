@@ -58,22 +58,21 @@ int download_feed_file(char * url, char * filename)
   return 0;
 }
 
-char ** create_feed_list(int *lines)
+char * create_feed_list(int *lines)
 {
-  int count = 11;
+  int cursor_pos = 11;
   FILE *url_list;
   url_list = fopen(URL_LIST, "r");
   *lines = count_lines(url_list);
   char feed_address[ITEMSIZE];
-  char ** file_names = malloc(*lines * sizeof(char*));
+  char * file_names = malloc(*lines * ITEMSIZE);
   for (int i = 0; i < *lines; ++i)
   {
     fgets(feed_address,ITEMSIZE,url_list);
     strtok(feed_address, "\n");
-    file_names[i] = malloc(ITEMSIZE * sizeof(char));
-    sprintf (file_names[i],"rss%d.xml", i);
-    download_feed_file(feed_address, file_names[i]);
-    mvprintw(23, count + i, "%s", ".");
+    sprintf (file_names + ITEMSIZE * i,"rss%d.xml", i);
+    download_feed_file(feed_address, file_names  + ITEMSIZE * i);
+    mvprintw(23, cursor_pos + i, "%s", ".");
     refresh();
   }
   fclose(url_list);

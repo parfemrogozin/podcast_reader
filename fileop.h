@@ -6,7 +6,7 @@
 
 void add_url(void);
 int count_lines(FILE *fp);
-char ** create_feed_list(int *lines);
+char * create_feed_list(int *lines);
 int download_feed_file(char * url, char * filename);
 
 

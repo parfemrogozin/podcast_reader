@@ -4,7 +4,7 @@
 #include "fileop.h"
 
 
-void print_menu(char ** titles, int lines, int highlight)
+void print_menu(const xmlChar ** titles, int lines, int highlight)
 {
   int y = 0;
   for(int i = 0; i < lines; ++i)
@@ -37,40 +37,26 @@ const xmlChar * read_single_value(xmlTextReaderPtr reader, const xmlChar * searc
   while (ret == 1)
   {
     depth = xmlTextReaderDepth(reader);
-    if (depth < min_depth)
+    if (depth >= min_depth)
     {
-    ret = xmlTextReaderRead(reader);
-    continue;
-    }
-    type = xmlTextReaderNodeType(reader);
-    if (type == 1)
-    {
-      tag_name = xmlTextReaderConstName(reader);
-    }
-    if (type == 15)
-    {
-      tag_name = NULL;
-    }
-    if ((type == 3 || type == 4) && !xmlStrcmp(tag_name, search_term))
-    {
-      value = xmlTextReaderConstValue(reader);
-      break;
+      type = xmlTextReaderNodeType(reader);
+      if (type == 1)
+      {
+        tag_name = xmlTextReaderConstName(reader);
+      }
+      else if (type == 15)
+      {
+        tag_name = NULL;
+      }
+      else if ((type == 3 || type == 4) && !xmlStrcmp(tag_name, search_term))
+      {
+        value = xmlTextReaderConstValue(reader);
+        break;
+      }
     }
     ret = xmlTextReaderRead(reader);
   }
   return value;
-}
-
-char ** read_list(char ** file_list, int lines)
-{
-  const xmlChar * search_term = (const xmlChar *)"title";
-  char ** titles = malloc(lines * sizeof(xmlChar*));
-  for(int i = 0; i < lines; ++i)
-  {
-    xmlTextReaderPtr reader = xmlReaderForFile(file_list[i], NULL,0);
-    titles[i] = (char *)read_single_value(reader, search_term);
-  }
-  return titles;
 }
 
 int read_controls(int * highlight, int lines)
@@ -143,10 +129,12 @@ int count_items(xmlTextReaderPtr reader)
 int main(void)
 {
   int lines = 0;
+  const xmlChar ** menu_items;
+  xmlTextReaderPtr * readers;
+  int files = 0;
   int choice = 0;
   int highlight = 1;
-  int files = 0;
-  xmlTextReaderPtr reader;
+  const xmlChar * search_term = (const xmlChar *)"title";
 
 
   setlocale(LC_ALL, "");
@@ -160,15 +148,18 @@ int main(void)
 
   mvprintw(23, 0, "%s", "Stahuji RSS");
   refresh();
-  char ** file_list = create_feed_list(&lines);
+  char * file_list = create_feed_list(&files);
   move(23,0);
   clrtoeol();
-  mvprintw(23, 0, "%s", "Načítám položky");
   refresh();
-  char ** menu_items = read_list(file_list, lines);
-  files = lines;
-  move(23,0);
-  clrtoeol();
+  lines = files;
+  menu_items = malloc(lines * sizeof(xmlChar *));
+  readers = malloc(files * sizeof(xmlTextReaderPtr));
+  for(int i = 0; i < files; ++i)
+  {
+    readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
+    menu_items[i] = read_single_value(readers[i], search_term);
+  }
 
   print_menu(menu_items, lines, highlight);
   while(1)
@@ -178,24 +169,22 @@ int main(void)
 
     if(choice != 0)
     {
-    reader = xmlReaderForFile(file_list[choice-1], NULL,0);
-    lines = count_items(reader);
-    break;
+      lines = count_items(readers[choice - 1]);
+      break;
     }
   }
 
   endwin();
-  printf("%s má %d položek.\n", file_list[choice-1], lines);
-  free(menu_items);
-  xmlFreeTextReader(reader);
-  for (int i = 0; i < files; ++i)
+  --choice;
+  printf("%s má %d položek.\n", file_list + ITEMSIZE * choice, lines);
+  for(int i = 0; i < files; ++i)
   {
-    remove(file_list[i]);
-    free(file_list[i]);
+    xmlFreeTextReader(readers[i]);
+    remove(file_list + ITEMSIZE * i);
   }
+  free(menu_items);
+  free(readers);
   free(file_list);
-
-
 }
 
 
