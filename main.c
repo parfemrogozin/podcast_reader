@@ -1,10 +1,11 @@
+#include <string.h>
 #include <locale.h>
 #include <ncurses.h>
 #include <libxml/xmlreader.h>
 #include "fileop.h"
 
 
-void print_menu(const xmlChar ** titles, int lines, int highlight)
+void print_menu(char * titles, int lines, int highlight)
 {
   int y = 0;
   for(int i = 0; i < lines; ++i)
@@ -12,16 +13,72 @@ void print_menu(const xmlChar ** titles, int lines, int highlight)
     if(highlight == i + 1)
     {
       attron(A_REVERSE);
-      mvprintw(y, 0, "%s", titles[i]);
+      mvprintw(y, 0, "%s", titles + ITEMSIZE * i);
       attroff(A_REVERSE);
     }
     else
     {
-    mvprintw(y, 0, "%s", titles[i]);
+    mvprintw(y, 0, "%s", titles  + ITEMSIZE * i);
     }
     ++y;
   refresh();
   }
+}
+
+int read_feed(xmlTextReaderPtr reader, char * menu_items)
+{
+  const xmlChar * item = (const xmlChar *)"item";
+  const xmlChar * title = (const xmlChar *)"title";
+  int ret;
+  int depth;
+  int type;
+  const xmlChar * tag_name = NULL;
+  const int min_depth = 2;
+  int inside = 0;
+  int is_title = 0;
+  int i = 0;
+
+
+  ret = xmlTextReaderRead(reader);
+  if (ret != 1)
+  {
+    return -1;
+  }
+  while (ret == 1)
+  {
+    ret = xmlTextReaderRead(reader);
+    depth = xmlTextReaderDepth(reader);
+    if (depth < min_depth)
+    {
+      continue;
+    }
+    type = xmlTextReaderNodeType(reader);
+    if (inside == 0 && type == 1)
+    {
+      tag_name = xmlTextReaderConstName(reader);
+      if (!xmlStrcmp(tag_name, item))
+      {
+        inside = 1;
+        continue;
+      }
+    }
+    if (inside == 1 && type == 1)
+    {
+      tag_name = xmlTextReaderConstName(reader);
+      if (!xmlStrcmp(tag_name, title))
+      {
+        is_title = 1;
+        continue;
+      }
+    }
+    if (is_title == 1 && type == 3)
+    {
+      strcpy (menu_items + ITEMSIZE * i, (char *) xmlTextReaderConstValue(reader));
+      ++i;
+      is_title = 0;
+    }
+  }
+  return 0;
 }
 
 const xmlChar * read_single_value(xmlTextReaderPtr reader, const xmlChar * search_term)
@@ -85,6 +142,10 @@ int read_controls(int * highlight, int lines)
       choice = *highlight;
     break;
 
+    case 'q':
+      choice = -1;
+    break;
+
     default:
     break;
   }
@@ -122,6 +183,7 @@ int count_items(xmlTextReaderPtr reader)
     }
   }
   while (ret == 1);
+  xmlFreeTextReader(reader);
   return item_count;
 }
 
@@ -129,12 +191,13 @@ int count_items(xmlTextReaderPtr reader)
 int main(void)
 {
   int lines = 0;
-  const xmlChar ** menu_items;
+  char * menu_items;
   xmlTextReaderPtr * readers;
   int files = 0;
   int choice = 0;
   int highlight = 1;
   const xmlChar * search_term = (const xmlChar *)"title";
+  int ret = 0;
 
 
   setlocale(LC_ALL, "");
@@ -153,30 +216,36 @@ int main(void)
   clrtoeol();
   refresh();
   lines = files;
-  menu_items = malloc(lines * sizeof(xmlChar *));
+  menu_items = malloc(lines * ITEMSIZE);
   readers = malloc(files * sizeof(xmlTextReaderPtr));
   for(int i = 0; i < files; ++i)
   {
     readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
-    menu_items[i] = read_single_value(readers[i], search_term);
+    strcpy (menu_items + ITEMSIZE * i, (char *) read_single_value(readers[i], search_term));
   }
 
   print_menu(menu_items, lines, highlight);
-  while(1)
+  while(choice > -1)
   {
     choice = read_controls(&highlight, lines);
     print_menu(menu_items, lines, highlight);
 
-    if(choice != 0)
+    if(choice > 0)
     {
-      lines = count_items(readers[choice - 1]);
-      break;
+      int i = choice -1;
+      lines = count_items(readers[i]);
+      readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
+      menu_items = realloc(menu_items, lines * ITEMSIZE);
+      ret = read_feed(readers[i], menu_items);
+      if (ret != 0)
+      {
+        break;
+      }
+      print_menu(menu_items, lines, highlight);
     }
   }
 
   endwin();
-  --choice;
-  printf("%s má %d položek.\n", file_list + ITEMSIZE * choice, lines);
   for(int i = 0; i < files; ++i)
   {
     xmlFreeTextReader(readers[i]);
