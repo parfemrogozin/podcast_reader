@@ -5,24 +5,23 @@
 #include "fileop.h"
 
 
-void print_menu(char * titles, int lines, int highlight)
+void print_menu(const char * titles, int lines, int highlight)
 {
-  int y = 0;
-  for(int i = 0; i < lines; ++i)
+  int page = 5;
+  for(int i = 0; i < page || i < lines; ++i)
   {
     if(highlight == i + 1)
     {
       attron(A_REVERSE);
-      mvprintw(y, 0, "%s", titles + ITEMSIZE * i);
+      mvprintw(i, 0, "%s", titles + ITEMSIZE * i);
       attroff(A_REVERSE);
     }
     else
     {
-    mvprintw(y, 0, "%s", titles  + ITEMSIZE * i);
+    mvprintw(i, 0, "%s", titles  + ITEMSIZE * i);
     }
-    ++y;
-  refresh();
   }
+  refresh();
 }
 
 int read_feed(xmlTextReaderPtr reader, char * menu_items)
@@ -209,10 +208,10 @@ int main(void)
   cbreak();
   curs_set(0);
 
-  mvprintw(23, 0, "%s", "Stahuji RSS");
+  mvprintw(LINES-1, 0, "%s", "Stahuji RSS");
   refresh();
   char * file_list = create_feed_list(&files);
-  move(23,0);
+  move(LINES-1,0);
   clrtoeol();
   refresh();
   lines = files;
@@ -224,9 +223,9 @@ int main(void)
     strcpy (menu_items + ITEMSIZE * i, (char *) read_single_value(readers[i], search_term));
   }
 
-  print_menu(menu_items, lines, highlight);
-  while(choice > -1)
+  do
   {
+    print_menu(menu_items, lines, highlight);
     choice = read_controls(&highlight, lines);
     print_menu(menu_items, lines, highlight);
 
@@ -241,9 +240,9 @@ int main(void)
       {
         break;
       }
-      print_menu(menu_items, lines, highlight);
     }
   }
+  while(choice > -1);
 
   endwin();
   for(int i = 0; i < files; ++i)

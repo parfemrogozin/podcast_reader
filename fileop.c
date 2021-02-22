@@ -11,7 +11,7 @@ void add_url(void)
   url_list = fopen(URL_LIST, "a");
 
   echo();
-  mvprintw(23,1,"%s", "Vlož adresu: ");
+  mvprintw(LINES-1,1,"%s", "Vlož adresu: ");
   getstr(rss_url);
   noecho();
 
@@ -72,7 +72,7 @@ char * create_feed_list(int *lines)
     strtok(feed_address, "\n");
     sprintf (file_names + ITEMSIZE * i,"rss%d.xml", i);
     download_feed_file(feed_address, file_names  + ITEMSIZE * i);
-    mvprintw(23, cursor_pos + i, "%s", ".");
+    mvprintw(LINES-1, cursor_pos + i, "%s", ".");
     refresh();
   }
   fclose(url_list);
