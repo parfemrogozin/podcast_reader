@@ -239,7 +239,9 @@ int main(void)
   int choice = 0;
   int highlight = 1;
   const xmlChar * search_term = (const xmlChar *)"title";
-  int ret = 0;
+  int level = 1;
+  int current_reader;
+  int cleared = 0;
 
 
   setlocale(LC_ALL, "");
@@ -260,41 +262,64 @@ int main(void)
   lines = files;
   menu_items = malloc(lines * ITEMSIZE);
   readers = malloc(files * sizeof(xmlTextReaderPtr));
-  for(int i = 0; i < files; ++i)
-  {
-    readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
-    strncpy (menu_items + ITEMSIZE * i, (char *) read_single_value(readers[i], search_term), ITEMSIZE - 2);
-  }
 
   do
   {
+    if (level == 1)
+    {
+      lines = files;
+      menu_items = realloc(menu_items, lines * ITEMSIZE);
+      for(int i = 0; i < files; ++i)
+      {
+        readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
+        strncpy (menu_items + ITEMSIZE * i, (char *) read_single_value(readers[i], search_term), ITEMSIZE - 2);
+      }
+    }
+
+    if (level == 2)
+    {
+      if (choice > 0) current_reader = choice -1;
+      lines = count_items(readers[current_reader]);
+      readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
+      menu_items = realloc(menu_items, lines * ITEMSIZE);
+      memset(menu_items,'\0', lines * ITEMSIZE);
+      read_feed(readers[current_reader], menu_items);
+      readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
+    }
     print_menu(menu_items, lines, highlight);
     choice = read_controls(&highlight, lines);
     print_menu(menu_items, lines, highlight);
 
-    if(choice > 0)
+    if (level == 3)
     {
-      int i = choice -1;
-      lines = count_items(readers[i]);
-      readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
-      menu_items = realloc(menu_items, lines * ITEMSIZE);
-      memset(menu_items,'\0', lines * ITEMSIZE);
-      ret = read_feed(readers[i], menu_items);
-      readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
-      if (ret != 0)
+      ;
+    }
+
+    if(choice > 0 && level < 3)
+    {
+      ++level;
+    }
+    if (choice < 0)
+    {
+      --level;
+      if (cleared == 0)
       {
-        break;
+        for(int i = 0; i < files; ++i)
+        {
+          xmlFreeTextReader(readers[i]);
+        }
+        cleared = 1;
       }
     }
   }
-  while(choice > -1);
+  while(level > 0);
 
   endwin();
-  for(int i = 0; i < files; ++i)
+  /*for(int i = 0; i < files; ++i)
   {
     xmlFreeTextReader(readers[i]);
-    /*remove(file_list + ITEMSIZE * i);*/
-  }
+    remove(file_list + ITEMSIZE * i);
+  }*/
   free(menu_items);
   free(readers);
   free(file_list);
