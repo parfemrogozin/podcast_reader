@@ -7,19 +7,28 @@
 
 void print_menu(const char * titles, int lines, int highlight)
 {
-  int page = 5;
-  for(int i = 0; i < page || i < lines; ++i)
+  int page_size = LINES - 1;
+  int page_start = ((highlight - 1) / page_size) * page_size;
+  erase();
+  for(int i = 0; i < page_size && i < lines; ++i)
   {
-    if(highlight == i + 1)
+    int array_step = ITEMSIZE * (i + page_start);
+    if ((i + page_start) < lines)
     {
-      attron(A_REVERSE);
-      mvprintw(i, 0, "%s", titles + ITEMSIZE * i);
-      attroff(A_REVERSE);
+      if(highlight == i + page_start + 1)
+      {
+        attron(A_REVERSE);
+        mvprintw(i, 0, "%s", titles + array_step);
+        attroff(A_REVERSE);
+      }
+      else
+      {
+        mvprintw(i, 0, "%s", titles  + array_step);
+      }
     }
-    else
-    {
-    mvprintw(i, 0, "%s", titles  + ITEMSIZE * i);
-    }
+    /*move(LINES-1,0);
+    clrtoeol();*/
+    mvprintw(LINES-1, 0, "Start: %d, současná pozice: %d", page_start, highlight);
   }
   refresh();
 }
@@ -72,7 +81,7 @@ int read_feed(xmlTextReaderPtr reader, char * menu_items)
     }
     if (is_title == 1 && type == 3)
     {
-      strcpy (menu_items + ITEMSIZE * i, (char *) xmlTextReaderConstValue(reader));
+      strncpy (menu_items + ITEMSIZE * i, (char *) xmlTextReaderConstValue(reader), ITEMSIZE - 1);
       ++i;
       is_title = 0;
     }
@@ -220,7 +229,7 @@ int main(void)
   for(int i = 0; i < files; ++i)
   {
     readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
-    strcpy (menu_items + ITEMSIZE * i, (char *) read_single_value(readers[i], search_term));
+    strncpy (menu_items + ITEMSIZE * i, (char *) read_single_value(readers[i], search_term), ITEMSIZE - 2);
   }
 
   do
@@ -235,6 +244,7 @@ int main(void)
       lines = count_items(readers[i]);
       readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
       menu_items = realloc(menu_items, lines * ITEMSIZE);
+      memset(menu_items,'\0', lines * ITEMSIZE);
       ret = read_feed(readers[i], menu_items);
       if (ret != 0)
       {
@@ -248,7 +258,7 @@ int main(void)
   for(int i = 0; i < files; ++i)
   {
     xmlFreeTextReader(readers[i]);
-    remove(file_list + ITEMSIZE * i);
+    /*remove(file_list + ITEMSIZE * i);*/
   }
   free(menu_items);
   free(readers);

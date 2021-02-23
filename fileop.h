@@ -1,7 +1,7 @@
 #ifndef my_header_stuff
 #define my_header_stuff
   #define URL_LIST "./ulr_list.txt"
-  #define ITEMSIZE 80
+  #define ITEMSIZE 81
 #endif
 
 void add_url(void);

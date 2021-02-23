@@ -71,7 +71,7 @@ char * create_feed_list(int *lines)
     fgets(feed_address,ITEMSIZE,url_list);
     strtok(feed_address, "\n");
     sprintf (file_names + ITEMSIZE * i,"rss%d.xml", i);
-    download_feed_file(feed_address, file_names  + ITEMSIZE * i);
+    /*download_feed_file(feed_address, file_names  + ITEMSIZE * i);*/
     mvprintw(LINES-1, cursor_pos + i, "%s", ".");
     refresh();
   }
