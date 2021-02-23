@@ -4,6 +4,38 @@
 #include <libxml/xmlreader.h>
 #include "fileop.h"
 
+const xmlChar * get_enclosure(xmlTextReaderPtr reader, int position)
+{
+  const xmlChar * url = NULL;
+  const xmlChar * search_tag = (const xmlChar *)"enclosure";
+  const xmlChar * search_attribute = (const xmlChar *)"url";
+  const int target_depth = 3;
+  int ret, depth, type;
+  int count = 0;
+  const xmlChar * tag_name;
+
+  ret = xmlTextReaderRead(reader);
+
+  while (ret == 1)
+  {
+    ret = xmlTextReaderRead(reader);
+    depth = xmlTextReaderDepth(reader);
+    if (depth != target_depth) continue;
+    type = xmlTextReaderNodeType(reader);
+    if (type != 1) continue;
+    tag_name = xmlTextReaderConstName(reader);
+    if (!xmlStrcmp(tag_name, search_tag))
+    {
+      ++count;
+      if (count == position)
+      {
+        url =  xmlTextReaderGetAttribute(reader, search_attribute);
+      }
+    }
+  }
+  return url;
+}
+
 
 void print_menu(const char * titles, int lines, int highlight)
 {
@@ -50,6 +82,7 @@ int read_feed(xmlTextReaderPtr reader, char * menu_items)
   ret = xmlTextReaderRead(reader);
   if (ret != 1)
   {
+    xmlFreeTextReader(reader);
     return -1;
   }
   while (ret == 1)
@@ -86,6 +119,7 @@ int read_feed(xmlTextReaderPtr reader, char * menu_items)
       is_title = 0;
     }
   }
+  xmlFreeTextReader(reader);
   return 0;
 }
 
@@ -246,6 +280,7 @@ int main(void)
       menu_items = realloc(menu_items, lines * ITEMSIZE);
       memset(menu_items,'\0', lines * ITEMSIZE);
       ret = read_feed(readers[i], menu_items);
+      readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
       if (ret != 0)
       {
         break;
