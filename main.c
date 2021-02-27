@@ -69,7 +69,6 @@ void print_menu(const char * titles, int lines, int highlight)
         mvprintw(i, 0, "%s", titles  + array_step);
       }
     }
-    /* mvprintw(LINES-1, 0, "Start: %d, současná pozice: %d", page_start, highlight);*/
   }
   refresh();
 }
@@ -245,7 +244,7 @@ int main(void)
   char * menu_items;
   xmlTextReaderPtr * readers;
   int files = 0;
-  int choice = 0;
+  int choice = -1;
   int highlight = 1;
   const xmlChar * search_term = (const xmlChar *)"title";
   int level = 1;
@@ -281,11 +280,14 @@ int main(void)
 
       case 1:
         lines = files;
-        menu_items = realloc(menu_items, lines * ITEMSIZE);
-        for(int i = 0; i < files; ++i)
+        if (choice < 0)
         {
-          readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
-          strncpy(menu_items + ITEMSIZE * i, (char *) read_single_value(readers[i], search_term), ITEMSIZE - 2);
+          menu_items = realloc(menu_items, lines * ITEMSIZE);
+          for(int i = 0; i < files; ++i)
+          {
+            readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
+            strncpy(menu_items + ITEMSIZE * i, (char *) read_single_value(readers[i], search_term), ITEMSIZE - 2);
+          }
         }
         print_menu(menu_items, lines, highlight);
       break;
@@ -345,9 +347,10 @@ int main(void)
 
   }
   while(level > 0);
-
+  mvprintw(LINES-1, 0, "%s", "Čekám, než se dokončí stahování...");
+  refresh();
+  pthread_join(download_thread, NULL);
   endwin();
-  /*pthread_join(download_thread, NULL);*/
   free(menu_items);
   free(readers);
   free(file_list);

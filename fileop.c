@@ -4,7 +4,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include "fileop.h"
 
 void add_url(void)
@@ -65,12 +64,9 @@ int download_file(char * url, char * filename)
 
 void * threaded_download(void * download_struct_ptr)
 {
-
   struct Download_data * ddata = (struct Download_data *) download_struct_ptr;
   mkdir(ddata->directory, 0700);
-  chdir(ddata->directory);
   download_file(ddata->url,ddata->filename);
-  chdir("..");
   return NULL;
 }
 
