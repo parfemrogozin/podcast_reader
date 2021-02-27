@@ -1,10 +1,8 @@
 LIBS=`ncursesw6-config --cflags --libs` `xml2-config --cflags --libs` -lcurl -lpthread
-OUTPUT=podcasty
+EXECUTABLE = podcasty
 
-
-
-all:
-	gcc -g -o $(OUTPUT) main.c fileop.c -std=c18 -pedantic -Wall -Wextra $(LIBS)
+$(EXECUTABLE): main.c fileop.c
+	gcc -g -o $@ $^ -std=c18 -pedantic -Wall -Wextra $(LIBS)
 
 clean:
-	$(RM) $(OUTPUT)
+	$(RM) $(EXECUTABLE)

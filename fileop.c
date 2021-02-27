@@ -13,7 +13,7 @@ void add_url(void)
   url_list = fopen(URL_LIST, "a");
 
   echo();
-  mvprintw(LINES-1,1,"%s", "Vlož adresu: ");
+  mvprintw(LINES-1, 0,"%s", "Vlož adresu: ");
   getstr(rss_url);
   noecho();
 
