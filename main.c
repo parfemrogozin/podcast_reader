@@ -308,14 +308,11 @@ int main(void)
 
     case 3:
       strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), 17);
-      mvprintw(LINES-1, 0, "%d: %s", highlight, download_data.filename);
-      refresh();
       replace_char(download_data.filename, ' ', '_');
       strncpy(download_data.filename + 17, ".mp3", 5);
       download_data.url = (char *) get_enclosure(readers[current_reader], choice);
       struct Download_data * ddataptr = & download_data;
       pthread_create(&download_thread, NULL, threaded_download, ddataptr);
-      refresh();
       readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
       level = 2;
     break;
@@ -350,6 +347,7 @@ int main(void)
   while(level > 0);
 
   endwin();
+  /*pthread_join(download_thread, NULL);*/
   free(menu_items);
   free(readers);
   free(file_list);
