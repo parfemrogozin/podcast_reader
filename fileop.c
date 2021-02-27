@@ -65,8 +65,12 @@ int download_file(char * url, char * filename)
 void * threaded_download(void * download_struct_ptr)
 {
   struct Download_data * ddata = (struct Download_data *) download_struct_ptr;
+  size_t dir_name_len = strlen(ddata->directory);
+  char * output_name = malloc(dir_name_len + 1 + BASENAMESIZE + SUFFIXSIZE);
   mkdir(ddata->directory, 0700);
-  download_file(ddata->url,ddata->filename);
+  sprintf (output_name,"%s/%s", ddata->directory, ddata->filename);
+  download_file(ddata->url, output_name);
+  free(output_name);
   return NULL;
 }
 

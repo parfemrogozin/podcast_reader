@@ -309,9 +309,9 @@ int main(void)
     break;
 
     case 3:
-      strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), 17);
+      strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), BASENAMESIZE);
       replace_char(download_data.filename, ' ', '_');
-      strncpy(download_data.filename + 17, ".mp3", 5);
+      strncpy(download_data.filename + BASENAMESIZE, ".mp3", SUFFIXSIZE);
       download_data.url = (char *) get_enclosure(readers[current_reader], choice);
       struct Download_data * ddataptr = & download_data;
       pthread_create(&download_thread, NULL, threaded_download, ddataptr);

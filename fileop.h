@@ -2,11 +2,13 @@
 #define my_header_stuff
   #define URL_LIST "./ulr_list.txt"
   #define ITEMSIZE 81
+  #define BASENAMESIZE 17
+  #define SUFFIXSIZE 5
 #endif
 
 struct Download_data
 {
-  char filename[22];
+  char filename[BASENAMESIZE + SUFFIXSIZE];
   char directory[ITEMSIZE];
   char * url;
 };
