@@ -1,8 +1,21 @@
 #include <string.h>
 #include <locale.h>
 #include <ncurses.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <libxml/xmlreader.h>
 #include "fileop.h"
+
+void replace_char(char* str, char find, char replace)
+{
+  char *current_pos = strchr(str,find);
+  while (current_pos)
+  {
+    *current_pos = replace;
+    current_pos = strchr(current_pos,find);
+  }
+}
 
 const xmlChar * get_enclosure(xmlTextReaderPtr reader, int position)
 {
@@ -239,6 +252,9 @@ int main(void)
   const xmlChar * search_term = (const xmlChar *)"title";
   int level = 1;
   int current_reader;
+  char chosen_title[ITEMSIZE];
+  struct Download_data download_data;
+  struct Download_data * ddataptr = & download_data;
   int cleared = 0;
 
 
@@ -272,27 +288,43 @@ int main(void)
         for(int i = 0; i < files; ++i)
         {
           readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
-          strncpy (menu_items + ITEMSIZE * i, (char *) read_single_value(readers[i], search_term), ITEMSIZE - 2);
+          strncpy(menu_items + ITEMSIZE * i, (char *) read_single_value(readers[i], search_term), ITEMSIZE - 2);
         }
         print_menu(menu_items, lines, highlight);
       break;
 
     case 2:
-      if (choice > 0) current_reader = choice -1;
-      lines = count_items(readers[current_reader]);
-      readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
-      menu_items = realloc(menu_items, lines * ITEMSIZE);
-      memset(menu_items,'\0', lines * ITEMSIZE);
-      read_feed(readers[current_reader], menu_items);
-      readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
+      if (choice > 0)
+      {
+        current_reader = choice -1;
+        strncpy(chosen_title, menu_items + ITEMSIZE * current_reader, ITEMSIZE - 1);
+        replace_char(chosen_title, ' ', '_');
+        lines = count_items(readers[current_reader]);
+        readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
+        menu_items = realloc(menu_items, lines * ITEMSIZE);
+        memset(menu_items,'\0', lines * ITEMSIZE);
+        read_feed(readers[current_reader], menu_items);
+        readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
+      }
       print_menu(menu_items, lines, highlight);
     break;
 
     case 3:
-      erase();
-      mvprintw(LINES-1, 0, "%s", get_enclosure(readers[current_reader], choice));
-      readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
+      strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), 17);
+      replace_char(download_data.filename, ' ', '_');
+      strncpy(download_data.filename + 17, ".mp3", 5);
+      mvprintw(LINES-1, 0, "%s", "Stahuji...");
       refresh();
+      mkdir (chosen_title, 0700);
+      chdir(chosen_title);
+      download_data.url = (char *) get_enclosure(readers[current_reader], choice);
+      /*download_file(download_data.url, download_data.filename);*/
+      threaded_download(ddataptr);
+      chdir("..");
+      mvprintw(LINES-1, 11, "%s", "hotovo!");
+      refresh();
+      readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
+      level = 2;
     break;
 
     default:
@@ -325,10 +357,6 @@ int main(void)
   while(level > 0);
 
   endwin();
-  /*for(int i = 0; i < files; ++i)
-  {
-    remove(file_list + ITEMSIZE * i);
-  }*/
   free(menu_items);
   free(readers);
   free(file_list);

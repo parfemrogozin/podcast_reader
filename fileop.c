@@ -41,7 +41,9 @@ int count_lines(FILE *fp)
   return line_count;
 }
 
-int download_feed_file(char * url, char * filename)
+
+
+int download_file(char * url, char * filename)
 {
   CURL * downloader;
   FILE * tmp_file = fopen(filename, "w");
@@ -58,6 +60,13 @@ int download_feed_file(char * url, char * filename)
   return 0;
 }
 
+void * threaded_download(void * download_struct_ptr)
+{
+  struct Download_data * ddata = (struct Download_data *) download_struct_ptr;
+  download_file(ddata->url,ddata->filename);
+  return NULL;
+}
+
 char * create_feed_list(int *lines)
 {
   int cursor_pos = 11;
@@ -71,7 +80,7 @@ char * create_feed_list(int *lines)
     fgets(feed_address,ITEMSIZE,url_list);
     strtok(feed_address, "\n");
     sprintf (file_names + ITEMSIZE * i,"rss%d.xml", i);
-    /*download_feed_file(feed_address, file_names  + ITEMSIZE * i);*/
+    /*download_file(feed_address, file_names  + ITEMSIZE * i);*/
     mvprintw(LINES-1, cursor_pos + i, "%s", ".");
     refresh();
   }

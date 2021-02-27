@@ -3,7 +3,7 @@ OUTPUT=podcasty
 
 
 
-all: main.c
+all:
 	gcc -g -o $(OUTPUT) main.c fileop.c -std=c18 -pedantic -Wall -Wextra $(LIBS)
 
 clean:

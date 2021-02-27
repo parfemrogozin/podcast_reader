@@ -4,10 +4,18 @@
   #define ITEMSIZE 81
 #endif
 
+struct Download_data
+{
+  char filename[22];
+  char * url;
+};
+
 void add_url(void);
 int count_lines(FILE *fp);
 char * create_feed_list(int *lines);
-int download_feed_file(char * url, char * filename);
+int download_file(char * url, char * filename);
+
+void * threaded_download(void * download_struct_ptr);
 
 
 
