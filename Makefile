@@ -1,4 +1,4 @@
-LIBS=`ncursesw6-config --cflags --libs` `xml2-config --cflags --libs` -lcurl
+LIBS=`ncursesw6-config --cflags --libs` `xml2-config --cflags --libs` -lcurl -lpthread
 OUTPUT=podcasty
 
 

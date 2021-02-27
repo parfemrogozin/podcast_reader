@@ -1,11 +1,9 @@
 #include <string.h>
 #include <locale.h>
 #include <ncurses.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <libxml/xmlreader.h>
 #include "fileop.h"
+#include <pthread.h>
 
 void replace_char(char* str, char find, char replace)
 {
@@ -252,10 +250,9 @@ int main(void)
   const xmlChar * search_term = (const xmlChar *)"title";
   int level = 1;
   int current_reader;
-  char chosen_title[ITEMSIZE];
   struct Download_data download_data;
-  struct Download_data * ddataptr = & download_data;
   int cleared = 0;
+  pthread_t download_thread;
 
 
   setlocale(LC_ALL, "");
@@ -297,8 +294,8 @@ int main(void)
       if (choice > 0)
       {
         current_reader = choice -1;
-        strncpy(chosen_title, menu_items + ITEMSIZE * current_reader, ITEMSIZE - 1);
-        replace_char(chosen_title, ' ', '_');
+        strncpy(download_data.directory, menu_items + ITEMSIZE * current_reader, ITEMSIZE - 1);
+        replace_char(download_data.directory, ' ', '_');
         lines = count_items(readers[current_reader]);
         readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
         menu_items = realloc(menu_items, lines * ITEMSIZE);
@@ -311,17 +308,13 @@ int main(void)
 
     case 3:
       strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), 17);
+      mvprintw(LINES-1, 0, "%d: %s", highlight, download_data.filename);
+      refresh();
       replace_char(download_data.filename, ' ', '_');
       strncpy(download_data.filename + 17, ".mp3", 5);
-      mvprintw(LINES-1, 0, "%s", "Stahuji...");
-      refresh();
-      mkdir (chosen_title, 0700);
-      chdir(chosen_title);
       download_data.url = (char *) get_enclosure(readers[current_reader], choice);
-      /*download_file(download_data.url, download_data.filename);*/
-      threaded_download(ddataptr);
-      chdir("..");
-      mvprintw(LINES-1, 11, "%s", "hotovo!");
+      struct Download_data * ddataptr = & download_data;
+      pthread_create(&download_thread, NULL, threaded_download, ddataptr);
       refresh();
       readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
       level = 2;
@@ -337,7 +330,7 @@ int main(void)
     if(choice > 0)
     {
       ++level;
-      highlight = 1;
+      if (level < 3) highlight = 1;
     }
     if (choice < 0)
     {

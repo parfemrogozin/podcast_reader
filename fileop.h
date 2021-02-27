@@ -7,6 +7,7 @@
 struct Download_data
 {
   char filename[22];
+  char directory[ITEMSIZE];
   char * url;
 };
 
