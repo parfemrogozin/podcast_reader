@@ -252,6 +252,7 @@ int main(void)
   struct Download_data download_data;
   int cleared = 0;
   pthread_t download_thread;
+  int no_threads = 1;
 
 
   setlocale(LC_ALL, "");
@@ -314,7 +315,7 @@ int main(void)
       strncpy(download_data.filename + BASENAMESIZE, ".mp3", SUFFIXSIZE);
       download_data.url = (char *) get_enclosure(readers[current_reader], choice);
       struct Download_data * ddataptr = & download_data;
-      pthread_create(&download_thread, NULL, threaded_download, ddataptr);
+      no_threads = pthread_create(&download_thread, NULL, threaded_download, ddataptr);
       readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
       level = 2;
     break;
@@ -347,9 +348,12 @@ int main(void)
 
   }
   while(level > 0);
-  mvprintw(LINES-1, 0, "%s", "Čekám, než se dokončí stahování...");
-  refresh();
-  pthread_join(download_thread, NULL);
+  if (!no_threads)
+  {
+    mvprintw(LINES-1, 0, "%s", "Čekám, než se dokončí stahování...");
+    refresh();
+    pthread_join(download_thread, NULL);
+  }
   endwin();
   free(menu_items);
   free(readers);
