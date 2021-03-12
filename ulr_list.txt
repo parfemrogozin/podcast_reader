@@ -3,3 +3,6 @@ https://feeds.buzzsprout.com/238686.rss
 https://feeds.podcastmirror.com/the-vdh-podcast
 https://feeds.feedburner.com/RicochetAudioNetwork/TheClassicist
 https://rss.art19.com/your-welcome
+https://feeds.megaphone.fm/WWO1549231729
+https://patrickcoffin.libsyn.com/rss
+https://feed.podbean.com/delingpole/feed.xml

@@ -41,12 +41,49 @@ const xmlChar * get_enclosure(xmlTextReaderPtr reader, int position)
       if (count == position)
       {
         url =  xmlTextReaderGetAttribute(reader, search_attribute);
+        break;
       }
     }
   }
   return url;
 }
 
+const xmlChar * get_description(xmlTextReaderPtr reader, int position)
+{
+  const xmlChar * description_text = NULL;
+  const xmlChar * search_tag = (const xmlChar *)"description";
+  const int target_depth = 3;
+  int ret, depth, type;
+  int count = 0;
+  int found = 0;
+  const xmlChar * tag_name;
+
+  ret = xmlTextReaderRead(reader);
+
+  while (ret == 1)
+  {
+    ret = xmlTextReaderRead(reader);
+    if (found)
+    {
+      description_text = xmlTextReaderConstValue(reader);
+      break;
+    }
+    depth = xmlTextReaderDepth(reader);
+    if (depth != target_depth) continue;
+    type = xmlTextReaderNodeType(reader);
+    if (type != 1) continue;
+    tag_name = xmlTextReaderConstName(reader);
+    if (!xmlStrcmp(tag_name, search_tag))
+    {
+      ++count;
+      if (count == position)
+      {
+        found = 1;
+      }
+    }
+  }
+  return description_text;
+}
 
 void print_menu(const char * titles, int lines, int highlight)
 {
@@ -140,9 +177,9 @@ const xmlChar * read_single_value(xmlTextReaderPtr reader, const xmlChar * searc
   const xmlChar * tag_name = NULL;
   const xmlChar * value = NULL;
 
-  ret = xmlTextReaderRead(reader);
-  while (ret == 1)
+  do
   {
+    ret = xmlTextReaderRead(reader);
     depth = xmlTextReaderDepth(reader);
     if (depth >= min_depth)
     {
@@ -161,8 +198,9 @@ const xmlChar * read_single_value(xmlTextReaderPtr reader, const xmlChar * searc
         break;
       }
     }
-    ret = xmlTextReaderRead(reader);
   }
+  while (ret == 1);
+
   return value;
 }
 
@@ -194,6 +232,14 @@ int read_controls(int * highlight, int lines)
 
     case 'q':
       choice = -1;
+    break;
+
+    case 'a':
+      choice = -2;
+    break;
+
+    case 'i':
+      choice = -3;
     break;
 
     default:
@@ -284,6 +330,7 @@ int main(void)
         if (choice < 0)
         {
           menu_items = realloc(menu_items, lines * ITEMSIZE);
+          memset(menu_items,'\0', lines * ITEMSIZE);
           for(int i = 0; i < files; ++i)
           {
             readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
@@ -307,6 +354,13 @@ int main(void)
         readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
       }
       print_menu(menu_items, lines, highlight);
+      if (choice == -3)
+      {
+        char * description = (char *) get_description(readers[current_reader], highlight);
+        clear();
+        mvprintw(0, 0, "%s", description);
+        refresh();
+      }
     break;
 
     case 3:
@@ -332,7 +386,7 @@ int main(void)
       ++level;
       if (level < 3) highlight = 1;
     }
-    if (choice < 0)
+    if (choice == -1)
     {
       --level;
       highlight = 1;
@@ -346,6 +400,13 @@ int main(void)
       }
     }
 
+    if (choice == -2)
+    {
+      add_url();
+      free(file_list);
+      mvprintw(LINES-1, 0, "%s", "Stahuji RSS");
+      file_list = create_feed_list(&files);
+    }
   }
   while(level > 0);
   if (!no_threads)

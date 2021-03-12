@@ -19,6 +19,7 @@ void add_url(void)
 
   fputs(rss_url, url_list);
   fputc('\n', url_list);
+  fclose(url_list);
 }
 
 int count_lines(FILE *fp)
@@ -49,7 +50,6 @@ int download_file(char * url, char * filename)
 {
   CURL * downloader;
   FILE * tmp_file = fopen(filename, "w");
-  /* TODO: https://curl.se/libcurl/c/curl_easy_setopt.html#CURLOPTFILETIME */
   downloader = curl_easy_init();
   curl_easy_setopt(downloader, CURLOPT_URL, url);
   curl_easy_setopt(downloader, CURLOPT_FOLLOWLOCATION, 1);
