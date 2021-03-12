@@ -2,20 +2,11 @@
 #include <locale.h>
 #include <ncurses.h>
 #include <libxml/xmlreader.h>
-#include "fileop.h"
-#include "xmlop.h"
 #include <pthread.h>
 
-void replace_char(char* str, char find, char replace)
-{
-  char *current_pos = strchr(str,find);
-  while (current_pos)
-  {
-    *current_pos = replace;
-    current_pos = strchr(current_pos,find);
-  }
-}
-
+#include "fileop.h"
+#include "xmlop.h"
+#include "strop.h"
 
 
 void print_menu(const char * titles, int lines, int highlight)
@@ -162,7 +153,11 @@ int main(void)
       print_menu(menu_items, lines, highlight);
       if (choice == -3)
       {
+        xmlFreeTextReader(readers[current_reader]);
+        readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
         char * description = (char *) get_description(readers[current_reader], highlight);
+        strip_html(description);
+        replace_multi_space_with_single_space(description);
         clear();
         mvprintw(0, 0, "%s", description);
         refresh();
