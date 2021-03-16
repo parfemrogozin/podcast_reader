@@ -1,6 +1,25 @@
 #include <string.h>
 #include "strop.h"
 
+
+void remove_symbols(char *str)
+{
+  char *dest = str;
+
+  while (*str != '\0')
+  {
+    while (*str == '"' ||
+           *str == ':' ||
+           *str == '#')
+    {
+      str++;
+    }
+  *dest++ = *str++;
+  }
+
+  *dest = '\0';
+}
+
 void replace_char(char* str, char find, char replace)
 {
   char *current_pos = strchr(str,find);
@@ -20,11 +39,6 @@ void strip_html(char* str)
     {
       inside = 1;
     }
-    /*if (*str == '/' && *str + 1 == 'p' && *str + 2 == '>')
-    {
-      *str = '\n';
-      str++;
-    }*/
     if (*str == '>')
     {
       *str = ' ';

@@ -91,7 +91,7 @@ int main(void)
   int highlight = 1;
   const xmlChar * search_term = (const xmlChar *)"title";
   int level = 1;
-  int current_reader;
+  int current_reader = 0;
   struct Download_data download_data;
   int cleared = 0;
   pthread_t download_thread;
@@ -133,6 +133,7 @@ int main(void)
             readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
             strncpy(menu_items + ITEMSIZE * i, (char *) read_single_value(readers[i], search_term), ITEMSIZE - 2);
           }
+          highlight = current_reader + 1;
         }
         print_menu(menu_items, lines, highlight);
       break;
@@ -142,6 +143,7 @@ int main(void)
       {
         current_reader = choice -1;
         strncpy(download_data.directory, menu_items + ITEMSIZE * current_reader, ITEMSIZE - 1);
+        remove_symbols(download_data.directory);
         replace_char(download_data.directory, ' ', '_');
         lines = count_items(readers[current_reader]);
         readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
@@ -166,6 +168,7 @@ int main(void)
 
     case 3:
       strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), BASENAMESIZE);
+      remove_symbols(download_data.filename);
       replace_char(download_data.filename, ' ', '_');
       strncpy(download_data.filename + BASENAMESIZE, ".mp3", SUFFIXSIZE);
       download_data.url = (char *) get_enclosure(readers[current_reader], choice);
