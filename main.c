@@ -8,6 +8,10 @@
 #include "xmlop.h"
 #include "strop.h"
 
+#define REWIND_READER() \
+xmlFreeTextReader(readers[current_reader]);\
+readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);\
+
 
 void print_menu(const char * titles, int lines, int highlight)
 {
@@ -155,13 +159,13 @@ int main(void)
       print_menu(menu_items, lines, highlight);
       if (choice == -3)
       {
-        xmlFreeTextReader(readers[current_reader]);
-        readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
+        REWIND_READER()
         char * description = (char *) get_description(readers[current_reader], highlight);
         strip_html(description);
         replace_multi_space_with_single_space(description);
         clear();
         mvprintw(0, 0, "%s", description);
+        REWIND_READER()
         refresh();
       }
     break;
