@@ -13,6 +13,8 @@ xmlFreeTextReader(readers[current_reader]);\
 readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);\
 
 
+const size_t MAX_THREADS = 16;
+
 void print_menu(const char * titles, int lines, int highlight)
 {
   int page_size = LINES - 1;
@@ -98,8 +100,8 @@ int main(void)
   int current_reader = 0;
   struct Download_data download_data;
   int cleared = 0;
-  pthread_t download_thread;
-  int no_threads = 1;
+  pthread_t download_thread[MAX_THREADS];
+  size_t thread_index = 0;
 
 
   setlocale(LC_ALL, "");
@@ -171,14 +173,30 @@ int main(void)
     break;
 
     case 3:
-      strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), BASENAMESIZE);
-      remove_symbols(download_data.filename);
-      replace_char(download_data.filename, ' ', '_');
-      strncpy(download_data.filename + BASENAMESIZE, ".mp3", SUFFIXSIZE);
-      download_data.url = (char *) get_enclosure(readers[current_reader], choice);
-      struct Download_data * ddataptr = & download_data;
-      no_threads = pthread_create(&download_thread, NULL, threaded_download, ddataptr);
-      readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
+      if (thread_index < MAX_THREADS)
+      {
+        strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), BASENAMESIZE);
+        remove_symbols(download_data.filename);
+        replace_char(download_data.filename, ' ', '_');
+        strncpy(download_data.filename + BASENAMESIZE, ".mp3", SUFFIXSIZE);
+        download_data.url = (char *) get_enclosure(readers[current_reader], choice);
+        struct Download_data * ddataptr = & download_data;
+        pthread_create(&download_thread[thread_index], NULL, threaded_download, ddataptr);
+        thread_index++;
+        readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
+      }
+      else
+      {
+        mvprintw(LINES-1, 0, "%s", "Čekám, než se dokončí stahování...");
+        refresh();
+        for(size_t i = 0; i< thread_index; i++)
+        {
+          pthread_join(download_thread[i], NULL);
+        }
+        move(LINES-1,0);
+        clrtoeol();
+        refresh();
+      }
       level = 2;
     break;
 
@@ -217,11 +235,12 @@ int main(void)
     }
   }
   while(level > 0);
-  if (!no_threads)
+
+  mvprintw(LINES-1, 0, "%s", "Čekám, než se dokončí stahování...");
+  refresh();
+  for(size_t i = 0; i< thread_index; i++)
   {
-    mvprintw(LINES-1, 0, "%s", "Čekám, než se dokončí stahování...");
-    refresh();
-    pthread_join(download_thread, NULL);
+    pthread_join(download_thread[i], NULL);
   }
   endwin();
   free(menu_items);

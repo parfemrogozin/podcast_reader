@@ -6,6 +6,7 @@
   #define SUFFIXSIZE 5
 #endif
 
+/* TODO: Add status of download */
 struct Download_data
 {
   char filename[BASENAMESIZE + SUFFIXSIZE];
