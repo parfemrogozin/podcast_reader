@@ -176,9 +176,10 @@ int main(void)
       if (thread_index < MAX_THREADS)
       {
         strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), BASENAMESIZE);
+        download_data.filename[BASENAMESIZE -1] = '\0';
         remove_symbols(download_data.filename);
         replace_char(download_data.filename, ' ', '_');
-        strncpy(download_data.filename + BASENAMESIZE, ".mp3", SUFFIXSIZE);
+        strcat(download_data.filename, ".mp3");
         download_data.url = (char *) get_enclosure(readers[current_reader], choice);
         struct Download_data * ddataptr = & download_data;
         pthread_create(&download_thread[thread_index], NULL, threaded_download, ddataptr);
