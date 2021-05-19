@@ -4,6 +4,7 @@
   #define ITEMSIZE 81
   #define BASENAMESIZE 17
   #define SUFFIXSIZE 5
+  #define SAVE_TEMPLATE "/tmp/rss%d.xml"
 #endif
 
 /* TODO: Add status of download */
