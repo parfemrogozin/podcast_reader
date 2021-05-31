@@ -101,8 +101,8 @@ int main(void)
   struct Download_data download_data;
   int cleared = 0;
   pthread_t download_thread[MAX_THREADS];
-  size_t thread_index = 0;
 
+  size_t thread_index = 0;
 
   setlocale(LC_ALL, "");
   LIBXML_TEST_VERSION
@@ -247,7 +247,6 @@ int main(void)
   {
     pthread_join(download_thread[i], NULL);
   }
-
   return 0;
 }
 

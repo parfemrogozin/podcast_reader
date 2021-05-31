@@ -5,7 +5,10 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <pthread.h>
 #include "fileop.h"
+
+extern pthread_mutex_t lock;
 
 int get_music_directory(char * audio_directory)
 {
@@ -72,6 +75,8 @@ int download_file(char * url, char * filename)
   return 0;
 }
 
+
+/* MAKE COPY OF STRUCT FOR THREAD SAFETY */
 void * threaded_download(void * download_struct_ptr)
 {
   struct Download_data * ddata = (struct Download_data *) download_struct_ptr;
@@ -84,11 +89,9 @@ void * threaded_download(void * download_struct_ptr)
   mkdir(ddata->directory, 0700);
   chdir(ddata->directory);
   download_file(ddata->url, ddata->filename);
-
-  sprintf(split_command, "mp3splt -t 10.00 -o @n2@t %s", ddata->filename);
+  sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 %s", ddata->filename);
   system(split_command);
   unlink(ddata->filename);
-
   return NULL;
 }
 

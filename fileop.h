@@ -7,6 +7,7 @@
   #define SAVE_TEMPLATE "/tmp/rss%d.xml"
 #endif
 
+
 /* TODO: Add status of download */
 struct Download_data
 {
