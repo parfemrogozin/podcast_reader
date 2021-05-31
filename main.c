@@ -142,6 +142,7 @@ int main(void)
       if (choice > 0)
       {
         current_feed = choice -1;
+        strncpy(download_data.directory, menu_items + ITEMSIZE * current_feed, ITEMSIZE - 1);
 
         lines = count_items(file_list + ITEMSIZE * current_feed);
         menu_items = (char *) realloc(menu_items, lines * ITEMSIZE);
@@ -166,7 +167,6 @@ int main(void)
     case 3:
       if (thread_index < MAX_THREADS)
       {
-        strncpy(download_data.directory, menu_items + ITEMSIZE * current_feed, ITEMSIZE - 1);
         remove_symbols(download_data.directory);
         replace_char(download_data.directory, ' ', '_');
 
@@ -176,10 +176,20 @@ int main(void)
         replace_char(download_data.filename, ' ', '_');
         strcat(download_data.filename, ".mp3");
 
-        download_data.url = get_enclosure(file_list + ITEMSIZE * current_feed, choice);
+        download_data.url = (char *) get_enclosure(file_list + ITEMSIZE * current_feed, choice);
+
+        clear();
+        mvprintw(0, 0, "%s", download_data.directory);
+        mvprintw(1, 0, "%s", download_data.filename);
+        mvprintw(2, 0, "%s", download_data.url);
+        refresh();
+
+
+        /*
         struct Download_data * ddataptr = & download_data;
         pthread_create(&download_thread[thread_index], NULL, threaded_download, ddataptr);
         thread_index++;
+        */
       }
       else
       {

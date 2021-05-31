@@ -7,13 +7,15 @@ char * get_enclosure(char * rss_file, int position)
 {
   xmlTextReaderPtr reader = xmlReaderForFile(rss_file, NULL,0);
 
-  char * url = malloc(URLMAX);
   const xmlChar * search_tag = (const xmlChar *)"enclosure";
   const xmlChar * search_attribute = (const xmlChar *)"url";
   const int target_depth = 3;
   int ret, depth, type;
   int count = 0;
   const xmlChar * tag_name;
+  size_t url_lenght;
+  char * url;
+  const xmlChar * value;
 
   ret = xmlTextReaderRead(reader);
 
@@ -30,13 +32,17 @@ char * get_enclosure(char * rss_file, int position)
       ++count;
       if (count == position)
       {
-        strncpy(url, (char *) xmlTextReaderGetAttribute(reader, search_attribute), URLMAX -1);
-        break;
+        value = xmlTextReaderGetAttribute(reader, search_attribute);
+        url_lenght = strlen((char *) value);
+        url = (char *) malloc(url_lenght + 2);
+        strcpy(url, (char *) value);
+        xmlFreeTextReader(reader);
+        return url; /* dealocate */
       }
     }
   }
   xmlFreeTextReader(reader);
-  return url;
+  return NULL;
 }
 
 char * get_description(char * rss_file, int position)
