@@ -237,16 +237,18 @@ int main(void)
   }
   while(level > 0);
 
-  mvprintw(LINES-1, 0, "%s", "Čekám, než se dokončí stahování...");
-  refresh();
-  for(size_t i = 0; i< thread_index; i++)
-  {
-    pthread_join(download_thread[i], NULL);
-  }
   endwin();
   free(menu_items);
   free(readers);
   free(file_list);
+
+  puts("Čekám, než se dokončí stahování...");
+  for(size_t i = 0; i< thread_index; i++)
+  {
+    pthread_join(download_thread[i], NULL);
+  }
+
+  return 0;
 }
 
 

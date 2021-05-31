@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <stdlib.h>
 #include <curl/curl.h>
 #include <ncurses.h>
@@ -5,6 +6,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "fileop.h"
+
+int get_music_directory(char * audio_directory)
+{
+  FILE * program_output;
+  program_output = popen("xdg-user-dir MUSIC", "r");
+  fscanf(program_output, "%s\n", audio_directory);
+  pclose(program_output);
+  return 0;
+}
 
 void add_url(void)
 {
@@ -65,12 +75,20 @@ int download_file(char * url, char * filename)
 void * threaded_download(void * download_struct_ptr)
 {
   struct Download_data * ddata = (struct Download_data *) download_struct_ptr;
-  size_t dir_name_len = strlen(ddata->directory);
-  char * output_name = malloc(dir_name_len + 1 + BASENAMESIZE + SUFFIXSIZE);
+  char audio_directory[80];
+  char split_command[240];
+  get_music_directory(audio_directory);
+  chdir(audio_directory);
+  mkdir("Podcasts", 0700);
+  chdir("Podcasts");
   mkdir(ddata->directory, 0700);
-  sprintf (output_name,"%s/%s", ddata->directory, ddata->filename);
-  download_file(ddata->url, output_name);
-  free(output_name);
+  chdir(ddata->directory);
+  download_file(ddata->url, ddata->filename);
+
+  sprintf(split_command, "mp3splt -t 10.00 -o @n2@t %s", ddata->filename);
+  system(split_command);
+  unlink(ddata->filename);
+
   return NULL;
 }
 
