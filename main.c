@@ -1,5 +1,6 @@
 #include <string.h>
 #include <locale.h>
+#include <unistd.h>
 #include <ncurses.h>
 #include <libxml/xmlreader.h>
 #include <pthread.h>
@@ -86,15 +87,15 @@ int main(void)
 {
   int lines = 0;
   char * menu_items;
+  char * item;
   int files = 0;
   int choice = -1;
   int highlight = 1;
-  const xmlChar * search_term = (const xmlChar *)"title";
   int level = 1;
-  int current_reader = 0;
+  int current_feed = 0;
+
   struct Download_data download_data;
   pthread_t download_thread[MAX_THREADS];
-
   size_t thread_index = 0;
 
   setlocale(LC_ALL, "");
@@ -113,7 +114,7 @@ int main(void)
   clrtoeol();
   refresh();
   lines = files;
-  menu_items = malloc(lines * ITEMSIZE);
+  menu_items = (char *) malloc(lines * ITEMSIZE);
 
   do
   {
@@ -124,13 +125,15 @@ int main(void)
         lines = files;
         if (choice < 0)
         {
-          menu_items = realloc(menu_items, lines * ITEMSIZE);
+          menu_items = (char *) realloc(menu_items, lines * ITEMSIZE);
           memset(menu_items,'\0', lines * ITEMSIZE);
           for(int i = 0; i < files; ++i)
           {
-            strncpy(menu_items + ITEMSIZE * i, (char *) read_single_value(file_list + ITEMSIZE * i, search_term), ITEMSIZE - 2);
+            item = read_single_value(file_list + ITEMSIZE * i, (const xmlChar *)"title");
+            strncpy(menu_items + ITEMSIZE * i, item, ITEMSIZE - 2);
+            free(item);
           }
-          highlight = current_reader + 1;
+          highlight = current_feed + 1;
         }
         print_menu(menu_items, lines, highlight);
       break;
@@ -138,22 +141,19 @@ int main(void)
     case 2:
       if (choice > 0)
       {
-        current_reader = choice -1;
+        current_feed = choice -1;
 
-        strncpy(download_data.directory, menu_items + ITEMSIZE * current_reader, ITEMSIZE - 1);
-        remove_symbols(download_data.directory);
-        replace_char(download_data.directory, ' ', '_');
-
-        lines = count_items(file_list + ITEMSIZE * current_reader);
-        menu_items = realloc(menu_items, lines * ITEMSIZE);
+        lines = count_items(file_list + ITEMSIZE * current_feed);
+        menu_items = (char *) realloc(menu_items, lines * ITEMSIZE);
         memset(menu_items,'\0', lines * ITEMSIZE);
-        read_feed(file_list + ITEMSIZE * current_reader, menu_items);
+
+        read_feed(file_list + ITEMSIZE * current_feed, menu_items);
       }
       print_menu(menu_items, lines, highlight);
       if (choice == -3)
       {
 
-        char * description = (char *) get_description(file_list + ITEMSIZE * current_reader, highlight);
+        char * description = (char *) get_description(file_list + ITEMSIZE * current_feed, highlight);
         strip_html(description);
         replace_multi_space_with_single_space(description);
         clear();
@@ -166,12 +166,17 @@ int main(void)
     case 3:
       if (thread_index < MAX_THREADS)
       {
+        strncpy(download_data.directory, menu_items + ITEMSIZE * current_feed, ITEMSIZE - 1);
+        remove_symbols(download_data.directory);
+        replace_char(download_data.directory, ' ', '_');
+
         strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), BASENAMESIZE);
         download_data.filename[BASENAMESIZE -1] = '\0';
         remove_symbols(download_data.filename);
         replace_char(download_data.filename, ' ', '_');
         strcat(download_data.filename, ".mp3");
-        download_data.url = get_enclosure(file_list + ITEMSIZE * current_reader, choice);
+
+        download_data.url = get_enclosure(file_list + ITEMSIZE * current_feed, choice);
         struct Download_data * ddataptr = & download_data;
         pthread_create(&download_thread[thread_index], NULL, threaded_download, ddataptr);
         thread_index++;
@@ -221,9 +226,12 @@ int main(void)
 
   endwin();
   free(menu_items);
+  for (int i = 0; i < files; i++)
+  {
+    unlink(file_list + ITEMSIZE * i);
+  }
   free(file_list);
 
-  puts("Čekám, než se dokončí stahování...");
   for(size_t i = 0; i< thread_index; i++)
   {
     pthread_join(download_thread[i], NULL);

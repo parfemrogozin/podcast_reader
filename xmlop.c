@@ -81,6 +81,7 @@ char * get_description(char * rss_file, int position)
 
 int read_feed(char * rss_file, char * menu_items)
 {
+
   xmlTextReaderPtr reader = xmlReaderForFile(rss_file, NULL,0);
 
   const xmlChar * item = (const xmlChar *)"item";
