@@ -3,9 +3,11 @@
 #include "fileop.h"
 #include "xmlop.h"
 
-const xmlChar * get_enclosure(xmlTextReaderPtr reader, int position)
+char * get_enclosure(char * rss_file, int position)
 {
-  const xmlChar * url = NULL;
+  xmlTextReaderPtr reader = xmlReaderForFile(rss_file, NULL,0);
+
+  char * url = malloc(URLMAX);
   const xmlChar * search_tag = (const xmlChar *)"enclosure";
   const xmlChar * search_attribute = (const xmlChar *)"url";
   const int target_depth = 3;
@@ -28,17 +30,20 @@ const xmlChar * get_enclosure(xmlTextReaderPtr reader, int position)
       ++count;
       if (count == position)
       {
-        url =  xmlTextReaderGetAttribute(reader, search_attribute);
+        strncpy(url, (char *) xmlTextReaderGetAttribute(reader, search_attribute), URLMAX -1);
         break;
       }
     }
   }
+  xmlFreeTextReader(reader);
   return url;
 }
 
-const xmlChar * get_description(xmlTextReaderPtr reader, int position)
+char * get_description(char * rss_file, int position)
 {
-  const xmlChar * description_text = NULL;
+  xmlTextReaderPtr reader = xmlReaderForFile(rss_file, NULL,0);
+
+  char * description_text = malloc(SCREENSIZE);
   const xmlChar * search_tag = (const xmlChar *)"description";
   const int target_depth = 3;
   int ret, depth, type;
@@ -53,7 +58,7 @@ const xmlChar * get_description(xmlTextReaderPtr reader, int position)
     ret = xmlTextReaderRead(reader);
     if (found)
     {
-      description_text = xmlTextReaderConstValue(reader);
+      strncpy(description_text, (char *) xmlTextReaderConstValue(reader), SCREENSIZE-1);
       break;
     }
     depth = xmlTextReaderDepth(reader);
@@ -70,11 +75,14 @@ const xmlChar * get_description(xmlTextReaderPtr reader, int position)
       }
     }
   }
+  xmlFreeTextReader(reader);
   return description_text;
 }
 
-int read_feed(xmlTextReaderPtr reader, char * menu_items)
+int read_feed(char * rss_file, char * menu_items)
 {
+  xmlTextReaderPtr reader = xmlReaderForFile(rss_file, NULL,0);
+
   const xmlChar * item = (const xmlChar *)"item";
   const xmlChar * title = (const xmlChar *)"title";
   int ret;
@@ -131,14 +139,14 @@ int read_feed(xmlTextReaderPtr reader, char * menu_items)
   return 0;
 }
 
-const xmlChar * read_single_value(xmlTextReaderPtr reader, const xmlChar * search_term)
+char * read_single_value(char * rss_file, const xmlChar * search_term)
 {
-  int ret;
-  int type;
-  int depth;
+  xmlTextReaderPtr reader = xmlReaderForFile(rss_file, NULL,0);
+
+  int ret, type, depth;
   const int min_depth = 2;
   const xmlChar * tag_name = NULL;
-  const xmlChar * value = NULL;
+  char * text  = (char *) malloc(ITEMSIZE);
 
   do
   {
@@ -157,18 +165,19 @@ const xmlChar * read_single_value(xmlTextReaderPtr reader, const xmlChar * searc
       }
       else if ((type == 3 || type == 4) && !xmlStrcmp(tag_name, search_term))
       {
-        value = xmlTextReaderConstValue(reader);
+        strncpy(text, (char *) xmlTextReaderConstValue(reader), ITEMSIZE -1);
         break;
       }
     }
   }
   while (ret == 1);
-
-  return value;
+  xmlFreeTextReader(reader);
+  return text;
 }
 
-int count_items(xmlTextReaderPtr reader)
+int count_items(char * rss_file)
 {
+  xmlTextReaderPtr reader = xmlReaderForFile(rss_file, NULL,0);
   int item_count = 0;
   const xmlChar * search_term = (const xmlChar *)"item";
   const xmlChar * tag_name = NULL;

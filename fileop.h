@@ -2,6 +2,8 @@
 #define my_header_stuff
   #define URL_LIST "./ulr_list.txt"
   #define ITEMSIZE 81
+  #define SCREENSIZE 1920
+  #define URLMAX 2048
   #define BASENAMESIZE 17
   #define SUFFIXSIZE 5
   #define SAVE_TEMPLATE "/tmp/rss%d.xml"

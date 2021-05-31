@@ -8,11 +8,6 @@
 #include "xmlop.h"
 #include "strop.h"
 
-#define REWIND_READER() \
-xmlFreeTextReader(readers[current_reader]);\
-readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);\
-
-
 const size_t MAX_THREADS = 16;
 
 void print_menu(const char * titles, int lines, int highlight)
@@ -91,7 +86,6 @@ int main(void)
 {
   int lines = 0;
   char * menu_items;
-  xmlTextReaderPtr * readers;
   int files = 0;
   int choice = -1;
   int highlight = 1;
@@ -99,7 +93,6 @@ int main(void)
   int level = 1;
   int current_reader = 0;
   struct Download_data download_data;
-  int cleared = 0;
   pthread_t download_thread[MAX_THREADS];
 
   size_t thread_index = 0;
@@ -121,7 +114,6 @@ int main(void)
   refresh();
   lines = files;
   menu_items = malloc(lines * ITEMSIZE);
-  readers = malloc(files * sizeof(xmlTextReaderPtr));
 
   do
   {
@@ -136,8 +128,7 @@ int main(void)
           memset(menu_items,'\0', lines * ITEMSIZE);
           for(int i = 0; i < files; ++i)
           {
-            readers[i] = xmlReaderForFile(file_list + ITEMSIZE * i, NULL,0);
-            strncpy(menu_items + ITEMSIZE * i, (char *) read_single_value(readers[i], search_term), ITEMSIZE - 2);
+            strncpy(menu_items + ITEMSIZE * i, (char *) read_single_value(file_list + ITEMSIZE * i, search_term), ITEMSIZE - 2);
           }
           highlight = current_reader + 1;
         }
@@ -148,26 +139,26 @@ int main(void)
       if (choice > 0)
       {
         current_reader = choice -1;
+
         strncpy(download_data.directory, menu_items + ITEMSIZE * current_reader, ITEMSIZE - 1);
         remove_symbols(download_data.directory);
         replace_char(download_data.directory, ' ', '_');
-        lines = count_items(readers[current_reader]);
-        readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
+
+        lines = count_items(file_list + ITEMSIZE * current_reader);
         menu_items = realloc(menu_items, lines * ITEMSIZE);
         memset(menu_items,'\0', lines * ITEMSIZE);
-        read_feed(readers[current_reader], menu_items);
-        readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
+        read_feed(file_list + ITEMSIZE * current_reader, menu_items);
       }
       print_menu(menu_items, lines, highlight);
       if (choice == -3)
       {
-        REWIND_READER()
-        char * description = (char *) get_description(readers[current_reader], highlight);
+
+        char * description = (char *) get_description(file_list + ITEMSIZE * current_reader, highlight);
         strip_html(description);
         replace_multi_space_with_single_space(description);
         clear();
         mvprintw(0, 0, "%s", description);
-        REWIND_READER()
+        free(description);
         refresh();
       }
     break;
@@ -180,11 +171,10 @@ int main(void)
         remove_symbols(download_data.filename);
         replace_char(download_data.filename, ' ', '_');
         strcat(download_data.filename, ".mp3");
-        download_data.url = (char *) get_enclosure(readers[current_reader], choice);
+        download_data.url = get_enclosure(file_list + ITEMSIZE * current_reader, choice);
         struct Download_data * ddataptr = & download_data;
         pthread_create(&download_thread[thread_index], NULL, threaded_download, ddataptr);
         thread_index++;
-        readers[current_reader] = xmlReaderForFile(file_list + ITEMSIZE * current_reader, NULL,0);
       }
       else
       {
@@ -217,14 +207,6 @@ int main(void)
     {
       --level;
       highlight = 1;
-      if (cleared == 0 && level < 2)
-      {
-        for(int i = 0; i < files; ++i)
-        {
-          xmlFreeTextReader(readers[i]);
-        }
-        cleared = 1;
-      }
     }
 
     if (choice == -2)
@@ -239,7 +221,6 @@ int main(void)
 
   endwin();
   free(menu_items);
-  free(readers);
   free(file_list);
 
   puts("Čekám, než se dokončí stahování...");
