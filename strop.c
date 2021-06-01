@@ -11,7 +11,8 @@ void remove_symbols(char *str)
     while (*str == '"' ||
            *str == ':' ||
            *str == '#' ||
-           *str == '&')
+           *str == '&' ||
+           *str == '-')
     {
       str++;
     }

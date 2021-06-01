@@ -34,7 +34,7 @@ char * get_enclosure(char * rss_file, int position)
       {
         value = xmlTextReaderGetAttribute(reader, search_attribute);
         url_lenght = strlen((char *) value);
-        url = (char *) malloc(url_lenght + 2);
+        url = malloc(url_lenght + 2);
         strcpy(url, (char *) value);
         xmlFreeTextReader(reader);
         return url; /* dealocate */
@@ -153,7 +153,7 @@ char * read_single_value(char * rss_file, const xmlChar * search_term)
   int ret, type, depth;
   const int min_depth = 2;
   const xmlChar * tag_name = NULL;
-  char * text  = (char *) malloc(ITEMSIZE);
+  char * text = malloc(ITEMSIZE);
 
   do
   {

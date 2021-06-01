@@ -117,7 +117,7 @@ int main(void)
   clrtoeol();
   refresh();
   lines = files;
-  menu_items = (char *) malloc(lines * ITEMSIZE);
+  menu_items = malloc(lines * ITEMSIZE);
 
   do
   {
@@ -128,7 +128,7 @@ int main(void)
         lines = files;
         if (choice < 0)
         {
-          menu_items = (char *) realloc(menu_items, lines * ITEMSIZE);
+          menu_items = realloc(menu_items, lines * ITEMSIZE);
           memset(menu_items,'\0', lines * ITEMSIZE);
           for(int i = 0; i < files; ++i)
           {
@@ -148,7 +148,7 @@ int main(void)
         strncpy(download_data.directory, menu_items + ITEMSIZE * current_feed, ITEMSIZE - 1);
 
         lines = count_items(file_list + ITEMSIZE * current_feed);
-        menu_items = (char *) realloc(menu_items, lines * ITEMSIZE);
+        menu_items = realloc(menu_items, lines * ITEMSIZE);
         memset(menu_items,'\0', lines * ITEMSIZE);
 
         read_feed(file_list + ITEMSIZE * current_feed, menu_items);
@@ -251,6 +251,12 @@ int main(void)
   {
     pthread_join(download_thread[i], NULL);
   }
+
+  for(size_t i = 0; i< thread_index; i++)
+  {
+    free(task[i].url);
+  }
+
   return 0;
 }
 
