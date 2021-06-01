@@ -204,6 +204,7 @@ int main(void)
         {
           pthread_join(download_thread[i], NULL);
         }
+        thread_index = 0;
         move(LINES-1,0);
         clrtoeol();
         refresh();
