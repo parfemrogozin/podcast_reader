@@ -10,6 +10,7 @@
 #include "strop.h"
 
 const size_t MAX_THREADS = 16;
+pthread_mutex_t lock;
 
 void print_menu(const char * titles, int lines, int highlight)
 {
@@ -95,8 +96,10 @@ int main(void)
   int current_feed = 0;
 
   struct Download_data download_data;
+  struct Download_data task[MAX_THREADS];
   pthread_t download_thread[MAX_THREADS];
   size_t thread_index = 0;
+  pthread_mutex_init(&lock, NULL);
 
   setlocale(LC_ALL, "");
   LIBXML_TEST_VERSION
@@ -168,11 +171,13 @@ int main(void)
       if (thread_index < MAX_THREADS)
       {
         remove_symbols(download_data.directory);
+        replace_multi_space_with_single_space(download_data.directory);
         replace_char(download_data.directory, ' ', '_');
 
         strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), BASENAMESIZE);
         download_data.filename[BASENAMESIZE -1] = '\0';
         remove_symbols(download_data.filename);
+        replace_multi_space_with_single_space(download_data.filename);
         replace_char(download_data.filename, ' ', '_');
         strcat(download_data.filename, ".mp3");
 
@@ -184,12 +189,12 @@ int main(void)
         mvprintw(2, 0, "%s", download_data.url);
         refresh();
 
+        task[thread_index] = download_data;
 
-        /*
-        struct Download_data * ddataptr = & download_data;
+        struct Download_data * ddataptr = & task[thread_index];
         pthread_create(&download_thread[thread_index], NULL, threaded_download, ddataptr);
         thread_index++;
-        */
+
       }
       else
       {

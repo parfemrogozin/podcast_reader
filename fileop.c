@@ -79,6 +79,7 @@ int download_file(char * url, char * filename)
 /* MAKE COPY OF STRUCT FOR THREAD SAFETY */
 void * threaded_download(void * download_struct_ptr)
 {
+  pthread_mutex_lock(&lock);
   struct Download_data * ddata = (struct Download_data *) download_struct_ptr;
   char audio_directory[80];
   char split_command[240];
@@ -92,6 +93,7 @@ void * threaded_download(void * download_struct_ptr)
   sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 %s", ddata->filename);
   system(split_command);
   unlink(ddata->filename);
+  pthread_mutex_unlock(&lock);
   return NULL;
 }
 
