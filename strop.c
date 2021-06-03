@@ -9,6 +9,7 @@ void remove_symbols(char *str)
   while (*str != '\0')
   {
     while (*str == '"' ||
+           *str == '\'' ||
            *str == ':' ||
            *str == '#' ||
            *str == '&' ||
