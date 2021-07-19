@@ -1,13 +1,18 @@
 #include <string.h>
-#include <locale.h>
 #include <unistd.h>
+#include <pthread.h>
+
+#include <locale.h>
+#include <libintl.h>
+
 #include <ncurses.h>
 #include <libxml/xmlreader.h>
-#include <pthread.h>
 
 #include "fileop.h"
 #include "xmlop.h"
 #include "strop.h"
+
+#define _(STRING) gettext(STRING)
 
 const size_t MAX_THREADS = 16;
 pthread_mutex_t lock;
@@ -102,6 +107,9 @@ int main(void)
   pthread_mutex_init(&lock, NULL);
 
   setlocale(LC_ALL, "");
+  bindtextdomain ("podcast_reader", getenv("PWD"));
+  textdomain ("podcast_reader");
+
   LIBXML_TEST_VERSION
 
   initscr();
@@ -110,7 +118,7 @@ int main(void)
   cbreak();
   curs_set(0);
 
-  mvprintw(LINES-1, 0, "%s", "Stahuji RSS");
+  mvprintw(LINES-1, 0, "%s", _("Downloading RSS"));
   refresh();
   char * file_list = create_feed_list(&files);
   move(LINES-1,0);
@@ -198,7 +206,7 @@ int main(void)
       }
       else
       {
-        mvprintw(LINES-1, 0, "%s", "Čekám, než se dokončí stahování...");
+        mvprintw(LINES-1, 0, "%s", _("Finishing downloads..."));
         refresh();
         for(size_t i = 0; i< thread_index; i++)
         {
@@ -234,7 +242,7 @@ int main(void)
     {
       add_url();
       free(file_list);
-      mvprintw(LINES-1, 0, "%s", "Stahuji RSS");
+      mvprintw(LINES-1, 0, "%s", _("Downloading RSS"));
       file_list = create_feed_list(&files);
     }
   }

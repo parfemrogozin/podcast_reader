@@ -8,6 +8,14 @@
 #include <pthread.h>
 #include "fileop.h"
 
+#include <locale.h>
+#include <libintl.h>
+
+#ifndef translation
+#define translation
+  #define _(STRING) gettext(STRING)
+#endif
+
 extern pthread_mutex_t lock;
 
 int get_music_directory(char * audio_directory)
@@ -26,7 +34,7 @@ void add_url(void)
   url_list = fopen(URL_LIST, "a");
 
   echo();
-  mvprintw(LINES-1, 0,"%s", "Vlož adresu: ");
+  mvprintw(LINES-1, 0,"%s", _("Enter RSS feed address: "));
   getstr(rss_url);
   noecho();
 
@@ -42,7 +50,7 @@ int count_lines(FILE *fp)
 
   if (fp == NULL)
   {
-    printf("Could not open file %s", URL_LIST);
+    printf(_("Could not open file %s"), URL_LIST);
     return -1;
   }
 
