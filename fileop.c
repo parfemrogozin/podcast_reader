@@ -83,8 +83,16 @@ void * threaded_download(void * download_struct_ptr)
   struct Download_data * ddata = (struct Download_data *) download_struct_ptr;
   char audio_directory[80];
   char split_command[240];
-  get_music_directory(audio_directory);
-  chdir(audio_directory);
+
+  if( access( "/usr/bin/xdg-user-dir", X_OK ) == 0 )
+  {
+    get_music_directory(audio_directory);
+    chdir(audio_directory);
+  }
+  else
+  {
+    chdir(getenv("HOME"));
+  }
   mkdir("Podcasts", 0700);
   chdir("Podcasts");
   mkdir(ddata->directory, 0700);
