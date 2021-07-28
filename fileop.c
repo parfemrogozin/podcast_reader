@@ -18,12 +18,32 @@
 
 extern pthread_mutex_t lock;
 
-int get_music_directory(char * audio_directory)
+char READER_PATHS[4][80];
+
+int set_paths(void)
 {
-  FILE * program_output;
-  program_output = popen("xdg-user-dir MUSIC", "r");
-  fscanf(program_output, "%s\n", audio_directory);
-  pclose(program_output);
+  strcpy(READER_PATHS[URL_LIST], getenv("XDG_CONFIG_HOME"));
+  strcat(READER_PATHS[URL_LIST], "/rss_feed_list.txt");
+
+  if( access( "/usr/bin/xdg-user-dir", X_OK ) == 0 )
+  {
+    FILE * program_output;
+    program_output = popen("xdg-user-dir MUSIC", "r");
+    fscanf(program_output, "%s\n", READER_PATHS[MUSIC_DIRECTORY]);
+    pclose(program_output);
+  }
+  else
+  {
+    strcpy(READER_PATHS[MUSIC_DIRECTORY], getenv("HOME"));
+  }
+  strcat(READER_PATHS[MUSIC_DIRECTORY], "/Podcasts");
+  mkdir(READER_PATHS[MUSIC_DIRECTORY], 0700);
+
+  strcpy(READER_PATHS[LOCALE_PATH], getenv("XDG_DATA_HOME"));
+  strcat(READER_PATHS[LOCALE_PATH], "/locale");
+  mkdir(READER_PATHS[LOCALE_PATH], 0700);
+
+  strcpy(READER_PATHS[SAVE_TEMPLATE], "/tmp/rss%d.xml");
   return 0;
 }
 
@@ -50,7 +70,7 @@ int count_lines(FILE *fp)
 
   if (fp == NULL)
   {
-    printf(_("Could not open file %s"), URL_LIST);
+    printf(_("Could not open file %s"), READER_PATHS[URL_LIST]);
     return -1;
   }
 
@@ -89,20 +109,8 @@ void * threaded_download(void * download_struct_ptr)
 {
   pthread_mutex_lock(&lock);
   struct Download_data * ddata = (struct Download_data *) download_struct_ptr;
-  char audio_directory[80];
   char split_command[240];
-
-  if( access( "/usr/bin/xdg-user-dir", X_OK ) == 0 )
-  {
-    get_music_directory(audio_directory);
-    chdir(audio_directory);
-  }
-  else
-  {
-    chdir(getenv("HOME"));
-  }
-  mkdir("Podcasts", 0700);
-  chdir("Podcasts");
+  chdir(READER_PATHS[MUSIC_DIRECTORY]);
   mkdir(ddata->directory, 0700);
   chdir(ddata->directory);
   download_file(ddata->url, ddata->filename);
@@ -117,7 +125,7 @@ char * create_feed_list(int *lines)
 {
   int cursor_pos = 11;
   FILE *url_list;
-  url_list = fopen(URL_LIST, "r");
+  url_list = fopen(READER_PATHS[URL_LIST], "r");
   *lines = count_lines(url_list);
   char feed_address[ITEMSIZE];
   char * file_names = malloc(*lines * ITEMSIZE);
@@ -125,7 +133,7 @@ char * create_feed_list(int *lines)
   {
     fgets(feed_address,ITEMSIZE,url_list);
     strtok(feed_address, "\n");
-    sprintf (file_names + ITEMSIZE * i, SAVE_TEMPLATE, i);
+    sprintf (file_names + ITEMSIZE * i, READER_PATHS[SAVE_TEMPLATE], i);
     download_file(feed_address, file_names  + ITEMSIZE * i);
     mvprintw(LINES-1, cursor_pos + i, "%s", ".");
     refresh();

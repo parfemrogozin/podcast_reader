@@ -17,6 +17,8 @@
 const size_t MAX_THREADS = 16;
 pthread_mutex_t lock;
 
+extern char READER_PATHS[4][80];
+
 void print_menu(const char * titles, int lines, int highlight)
 {
   int page_size = LINES - 1;
@@ -100,6 +102,8 @@ int main(void)
   int level = 1;
   int current_feed = 0;
 
+  set_paths();
+
   struct Download_data download_data;
   struct Download_data task[MAX_THREADS];
   pthread_t download_thread[MAX_THREADS];
@@ -107,7 +111,7 @@ int main(void)
   pthread_mutex_init(&lock, NULL);
 
   setlocale(LC_ALL, "");
-  bindtextdomain ("podcast_reader", getenv("PWD"));
+  bindtextdomain ("podcast_reader", READER_PATHS[LOCALE_PATH]);
   textdomain ("podcast_reader");
 
   LIBXML_TEST_VERSION
