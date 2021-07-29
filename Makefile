@@ -22,7 +22,7 @@ po/$(EXECUTABLE).pot:
 install:
 	install $(EXECUTABLE) $(PREFIX)/.local/bin
 	install -d $(PREFIX)/.local/share/locale/cs/LC_MESSAGES
-	install -m 400 po/cs/$(EXECUTABLE).mo $(PREFIX)/.local/share/locale/cs/LC_MESSAGES
+	install -m 644 po/cs/$(EXECUTABLE).mo $(PREFIX)/.local/share/locale/cs/LC_MESSAGES
 	install -m 600 rss_feed_list.txt $(PREFIX)/.config
 
 uninstall:

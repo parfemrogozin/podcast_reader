@@ -51,7 +51,7 @@ void add_url(void)
 {
   char rss_url[80];
   FILE *url_list;
-  url_list = fopen(URL_LIST, "a");
+  url_list = fopen(READER_PATHS[URL_LIST], "a");
 
   echo();
   mvprintw(LINES-1, 0,"%s", _("Enter RSS feed address: "));
