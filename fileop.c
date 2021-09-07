@@ -22,7 +22,15 @@ char READER_PATHS[4][80];
 
 int set_paths(void)
 {
-  strcpy(READER_PATHS[URL_LIST], getenv("XDG_CONFIG_HOME"));
+  if (getenv("XDG_CONFIG_HOME"))
+  {
+    strcpy(READER_PATHS[URL_LIST], getenv("XDG_CONFIG_HOME"));
+  }
+  else
+  {
+    strcpy(READER_PATHS[URL_LIST], getenv("HOME"));
+    strcat(READER_PATHS[URL_LIST], "/.config");
+  }
   strcat(READER_PATHS[URL_LIST], "/rss_feed_list.txt");
 
   if( access( "/usr/bin/xdg-user-dir", X_OK ) == 0 )
@@ -39,7 +47,15 @@ int set_paths(void)
   strcat(READER_PATHS[MUSIC_DIRECTORY], "/Podcasts");
   mkdir(READER_PATHS[MUSIC_DIRECTORY], 0700);
 
+  if (getenv("XDG_DATA_HOME"))
+  {
   strcpy(READER_PATHS[LOCALE_PATH], getenv("XDG_DATA_HOME"));
+  }
+  else
+  {
+    strcpy(READER_PATHS[LOCALE_PATH], getenv("HOME"));
+    strcat(READER_PATHS[LOCALE_PATH], "/.local/share");
+  }
   strcat(READER_PATHS[LOCALE_PATH], "/locale");
   mkdir(READER_PATHS[LOCALE_PATH], 0700);
 

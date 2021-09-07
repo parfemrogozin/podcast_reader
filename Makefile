@@ -20,6 +20,7 @@ po/$(EXECUTABLE).pot:
 	xgettext --keyword=_ --language=C --from-code=utf-8 --add-comments --sort-output -o po/podcast_reader.pot `ls *.c`
 
 install:
+	install -d $(PREFIX)/.local/bin
 	install $(EXECUTABLE) $(PREFIX)/.local/bin
 	install -d $(PREFIX)/.local/share/locale/cs/LC_MESSAGES
 	install -m 644 po/cs/$(EXECUTABLE).mo $(PREFIX)/.local/share/locale/cs/LC_MESSAGES
