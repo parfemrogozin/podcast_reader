@@ -1,6 +1,6 @@
+#define _GNU_SOURCE
 #include <string.h>
 #include "strop.h"
-
 
 void remove_symbols(char *str)
 {
@@ -70,4 +70,18 @@ void replace_multi_space_with_single_space(char *str)
   }
 
   *dest = '\0';
+}
+
+int find_string_in_array(char * str_array, char * string, int lines)
+{
+  int position = 0;
+  for(int i = 0; i < lines; ++i)
+  {
+    if( strcasestr(str_array + 81 * i, string) )
+    {
+      position = i + 1;
+      break;
+    }
+  }
+  return position;
 }

@@ -84,6 +84,10 @@ int read_controls(int * highlight, int lines)
       choice = -3;
     break;
 
+    case 's':
+      choice = -4;
+    break;
+
     default:
     break;
   }
@@ -249,6 +253,12 @@ int main(void)
       mvprintw(LINES-1, 0, "%s", _("Downloading RSS"));
       file_list = create_feed_list(&files);
     }
+
+    if (choice == -4)
+    {
+      highlight = find_string_in_array(menu_items, "Lipovsk", lines);
+    }
+
   }
   while(level > 0);
 

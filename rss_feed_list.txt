@@ -5,3 +5,4 @@ https://feeds.megaphone.fm/WWO1549231729
 https://patrickcoffin.libsyn.com/rss
 https://feed.podbean.com/delingpole/feed.xml
 https://rss.art19.com/the-victor-davis-hanson-show
+https://feeds.soundcloud.com/users/soundcloud:users:372777143/sounds.rss
