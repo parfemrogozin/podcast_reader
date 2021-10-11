@@ -84,7 +84,7 @@ int read_controls(int * highlight, int lines)
       choice = -3;
     break;
 
-    case 's':
+    case '/':
       choice = -4;
     break;
 
@@ -100,6 +100,7 @@ int main(void)
   int lines = 0;
   char * menu_items;
   char * item;
+  char search_term[80];
   int files = 0;
   int choice = -1;
   int highlight = 1;
@@ -256,7 +257,11 @@ int main(void)
 
     if (choice == -4)
     {
-      highlight = find_string_in_array(menu_items, "Lipovsk", lines);
+      echo();
+      mvprintw(LINES-1, 0,"%s", _("Find: "));
+      getstr(search_term);
+      noecho();
+      highlight = find_string_in_array(menu_items, search_term, lines);
     }
 
   }
