@@ -30,6 +30,10 @@ msgstr "Stahuji RSS"
 msgid "Enter RSS feed address: "
 msgstr "Zadejte adresu RSS souboru: "
 
+#: main.c:261
+msgid "Najdi: "
+msgstr ""
+
 #: main.c:209
 msgid "Finishing downloads..."
 msgstr "Dokončuji stahování..."

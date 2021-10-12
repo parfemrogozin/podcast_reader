@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-07-20 01:38+0200\n"
+"POT-Creation-Date: 2021-10-11 12:41+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,19 +17,23 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: fileop.c:53
+#: fileop.c:89
 #, c-format
 msgid "Could not open file %s"
 msgstr ""
 
-#: main.c:121 main.c:245
+#: main.c:130 main.c:254
 msgid "Downloading RSS"
 msgstr ""
 
-#: fileop.c:37
+#: fileop.c:73
 msgid "Enter RSS feed address: "
 msgstr ""
 
-#: main.c:209
+#: main.c:261
+msgid "Find: "
+msgstr ""
+
+#: main.c:218
 msgid "Finishing downloads..."
 msgstr ""

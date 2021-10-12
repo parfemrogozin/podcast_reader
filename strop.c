@@ -72,10 +72,10 @@ void replace_multi_space_with_single_space(char *str)
   *dest = '\0';
 }
 
-int find_string_in_array(char * str_array, char * string, int lines)
+int find_string_in_array(char * str_array, char * string, int start, int lines)
 {
   int position = 0;
-  for(int i = 0; i < lines; ++i)
+  for(int i = start; i < lines; ++i)
   {
     if( strcasestr(str_array + 81 * i, string) )
     {

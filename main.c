@@ -190,12 +190,12 @@ int main(void)
         remove_symbols(download_data.directory);
         replace_multi_space_with_single_space(download_data.directory);
         replace_char(download_data.directory, ' ', '_');
-
         strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), BASENAMESIZE);
         download_data.filename[BASENAMESIZE -1] = '\0';
         remove_symbols(download_data.filename);
         replace_multi_space_with_single_space(download_data.filename);
         replace_char(download_data.filename, ' ', '_');
+
         strcat(download_data.filename, ".mp3");
 
         download_data.url = (char *) get_enclosure(file_list + ITEMSIZE * current_feed, choice);
@@ -261,7 +261,7 @@ int main(void)
       mvprintw(LINES-1, 0,"%s", _("Find: "));
       getstr(search_term);
       noecho();
-      highlight = find_string_in_array(menu_items, search_term, lines);
+      highlight = find_string_in_array(menu_items, search_term, 0, lines);
     }
 
   }
