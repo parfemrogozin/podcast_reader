@@ -1,4 +1,4 @@
-LIBS=`ncursesw6-config --cflags --libs` `xml2-config --cflags --libs` -lcurl -lpthread
+LIBS=`ncursesw6-config --cflags --libs` `xml2-config --cflags --libs` -lcurl -lpthread -lrt
 EXECUTABLE = podcast_reader
 
 ifeq ($(PREFIX),)

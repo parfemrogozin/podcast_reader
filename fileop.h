@@ -28,8 +28,4 @@ void add_url(void);
 int count_lines(FILE *fp);
 char * create_feed_list(int *lines);
 int download_file(char * url, char * filename);
-
-void * threaded_download(void * download_struct_ptr);
-
-
-
+void * start_downloader();

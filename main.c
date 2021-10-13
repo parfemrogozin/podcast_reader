@@ -1,6 +1,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <mqueue.h>
 
 #include <locale.h>
 #include <libintl.h>
@@ -13,9 +14,6 @@
 #include "strop.h"
 
 #define _(STRING) gettext(STRING)
-
-const size_t MAX_THREADS = 16;
-pthread_mutex_t lock;
 
 extern char READER_PATHS[4][80];
 
@@ -106,20 +104,28 @@ int main(void)
   int highlight = 1;
   int level = 1;
   int current_feed = 0;
+  struct Download_data download_data;
+
+  pthread_t downloader_thread_id;
+  struct mq_attr dq_attr;
+
+  mqd_t download_queue;
+  dq_attr.mq_flags = 0;
+  dq_attr.mq_maxmsg = 10;
+  dq_attr.mq_msgsize = sizeof(download_data);
+  dq_attr.mq_curmsgs = 0;
 
   set_paths();
-
-  struct Download_data download_data;
-  struct Download_data task[MAX_THREADS];
-  pthread_t download_thread[MAX_THREADS];
-  size_t thread_index = 0;
-  pthread_mutex_init(&lock, NULL);
 
   setlocale(LC_ALL, "");
   bindtextdomain ("podcast_reader", READER_PATHS[LOCALE_PATH]);
   textdomain ("podcast_reader");
 
   LIBXML_TEST_VERSION
+
+  download_queue = mq_open ("/podcast_reader", O_CREAT | O_EXCL | O_WRONLY,  0600, &dq_attr);
+  pthread_create(&downloader_thread_id, NULL, start_downloader, NULL);
+
 
   initscr();
   keypad(stdscr, TRUE);
@@ -185,47 +191,21 @@ int main(void)
     break;
 
     case 3:
-      if (thread_index < MAX_THREADS)
-      {
-        remove_symbols(download_data.directory);
-        replace_multi_space_with_single_space(download_data.directory);
-        replace_char(download_data.directory, ' ', '_');
-        strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), BASENAMESIZE);
-        download_data.filename[BASENAMESIZE -1] = '\0';
-        remove_symbols(download_data.filename);
-        replace_multi_space_with_single_space(download_data.filename);
-        replace_char(download_data.filename, ' ', '_');
+      remove_symbols(download_data.directory);
+      replace_multi_space_with_single_space(download_data.directory);
+      replace_char(download_data.directory, ' ', '_');
 
-        strcat(download_data.filename, ".mp3");
+      strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), BASENAMESIZE);
+      download_data.filename[BASENAMESIZE -1] = '\0';
+      remove_symbols(download_data.filename);
+      replace_multi_space_with_single_space(download_data.filename);
+      replace_char(download_data.filename, ' ', '_');
+      strcat(download_data.filename, ".mp3");
 
-        download_data.url = (char *) get_enclosure(file_list + ITEMSIZE * current_feed, choice);
+      download_data.url = (char *) get_enclosure(file_list + ITEMSIZE * current_feed, choice);
 
-        clear();
-        mvprintw(0, 0, "%s", download_data.directory);
-        mvprintw(1, 0, "%s", download_data.filename);
-        mvprintw(2, 0, "%s", download_data.url);
-        refresh();
+      mq_send(download_queue, (char *) &download_data, sizeof(download_data), 0);
 
-        task[thread_index] = download_data;
-
-        struct Download_data * ddataptr = & task[thread_index];
-        pthread_create(&download_thread[thread_index], NULL, threaded_download, ddataptr);
-        thread_index++;
-
-      }
-      else
-      {
-        mvprintw(LINES-1, 0, "%s", _("Finishing downloads..."));
-        refresh();
-        for(size_t i = 0; i< thread_index; i++)
-        {
-          pthread_join(download_thread[i], NULL);
-        }
-        thread_index = 0;
-        move(LINES-1,0);
-        clrtoeol();
-        refresh();
-      }
       level = 2;
     break;
 
@@ -274,16 +254,9 @@ int main(void)
     unlink(file_list + ITEMSIZE * i);
   }
   free(file_list);
-
-  for(size_t i = 0; i< thread_index; i++)
-  {
-    pthread_join(download_thread[i], NULL);
-  }
-
-  for(size_t i = 0; i< thread_index; i++)
-  {
-    free(task[i].url);
-  }
+  pthread_join(downloader_thread_id, NULL);
+  mq_close(download_queue);
+  mq_unlink("/podcast_reader");
 
   return 0;
 }

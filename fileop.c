@@ -6,6 +6,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#include <mqueue.h>
+
 #include "fileop.h"
 
 #include <locale.h>
@@ -15,8 +17,6 @@
 #define translation
   #define _(STRING) gettext(STRING)
 #endif
-
-extern pthread_mutex_t lock;
 
 char READER_PATHS[4][80];
 
@@ -120,10 +120,9 @@ int download_file(char * url, char * filename)
 }
 
 
-/* MAKE COPY OF STRUCT FOR THREAD SAFETY */
+/* REWORK
 void * threaded_download(void * download_struct_ptr)
 {
-  pthread_mutex_lock(&lock);
   struct Download_data * ddata = (struct Download_data *) download_struct_ptr;
   char split_command[240];
   chdir(READER_PATHS[MUSIC_DIRECTORY]);
@@ -133,9 +132,33 @@ void * threaded_download(void * download_struct_ptr)
   sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 %s", ddata->filename);
   system(split_command);
   unlink(ddata->filename);
-  pthread_mutex_unlock(&lock);
+
   return NULL;
 }
+*/
+
+void * start_downloader()
+{
+  struct Download_data  * request;
+  char buffer[sizeof( struct Download_data)];
+  mqd_t queue = mq_open ("/podcast_reader", O_RDONLY);
+  while (1)
+  {
+    mq_receive(queue, buffer, sizeof(struct Download_data), NULL);
+    request = (struct Download_data *) buffer;
+
+    clear();
+        mvprintw(0, 0, "%s", request->directory);
+        mvprintw(1, 0, "%s", request->filename);
+        mvprintw(2, 0, "%s", request->url);
+    refresh();
+
+    /*download_file(request->url, request->filename);*/
+  }
+
+  return NULL;
+}
+
 
 char * create_feed_list(int *lines)
 {
