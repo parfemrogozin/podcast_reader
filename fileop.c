@@ -150,14 +150,13 @@ void * start_downloader()
     chdir(READER_PATHS[MUSIC_DIRECTORY]);
     mkdir(request->directory, 0700);
     chdir(request->directory);
+
     ord_num = 0;
     while ( access( request->filename, F_OK ) == 0 )
     {
       ord_num++;
       request->filename[strlen(request->filename)-1] = '0' + ord_num;
     }
-
-    mkdir(request->filename, 0700); /*temp*/
     strcat(request->filename, ".mp3");
 
     move(LINES-1,0);
