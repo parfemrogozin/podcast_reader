@@ -123,7 +123,7 @@ int main(void)
 
   LIBXML_TEST_VERSION
 
-  download_queue = mq_open ("/podcast_reader", O_CREAT | O_EXCL | O_WRONLY,  0600, &dq_attr);
+  download_queue = mq_open (QUEUENAME,  O_WRONLY | O_CREAT,  0600, &dq_attr);
   pthread_create(&downloader_thread_id, NULL, start_downloader, NULL);
 
 
@@ -200,11 +200,14 @@ int main(void)
       remove_symbols(download_data.filename);
       replace_multi_space_with_single_space(download_data.filename);
       replace_char(download_data.filename, ' ', '_');
-      strcat(download_data.filename, ".mp3");
 
       download_data.url = (char *) get_enclosure(file_list + ITEMSIZE * current_feed, choice);
-
-      mq_send(download_queue, (char *) &download_data, sizeof(download_data), 0);
+      clear();
+        mvprintw(0,0, "%s: %s", _("Directory"), download_data.directory);
+        mvprintw(1,0, "%s: %s", _("URL"), download_data.url);
+        mvprintw(2,0, "%s: %s", _("Filename"), download_data.filename);
+      refresh();
+      mq_send(download_queue, (char *) &download_data, sizeof(download_data), 1);
 
       level = 2;
     break;
@@ -247,16 +250,22 @@ int main(void)
   }
   while(level > 0);
 
-  endwin();
+
+  clear();
+  mvprintw(LINES-2,0, "%s", _("Wait for downloads..."));
+  refresh();
   free(menu_items);
   for (int i = 0; i < files; i++)
   {
     unlink(file_list + ITEMSIZE * i);
   }
   free(file_list);
+
+  mq_send(download_queue, (char *) &download_data, sizeof(download_data), 0);
   pthread_join(downloader_thread_id, NULL);
   mq_close(download_queue);
-  mq_unlink("/podcast_reader");
+  mq_unlink(QUEUENAME);
+  endwin();
 
   return 0;
 }

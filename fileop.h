@@ -5,6 +5,7 @@
   #define URLMAX 2048
   #define BASENAMESIZE 17
   #define SUFFIXSIZE 5
+  #define QUEUENAME "/podcast_reader_requests"
 #endif
 
 enum names_of_pahs

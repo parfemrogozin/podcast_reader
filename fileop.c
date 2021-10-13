@@ -121,14 +121,7 @@ int download_file(char * url, char * filename)
 
 
 /* REWORK
-void * threaded_download(void * download_struct_ptr)
-{
-  struct Download_data * ddata = (struct Download_data *) download_struct_ptr;
-  char split_command[240];
-  chdir(READER_PATHS[MUSIC_DIRECTORY]);
-  mkdir(ddata->directory, 0700);
-  chdir(ddata->directory);
-  download_file(ddata->url, ddata->filename);
+
   sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 %s", ddata->filename);
   system(split_command);
   unlink(ddata->filename);
@@ -139,23 +132,43 @@ void * threaded_download(void * download_struct_ptr)
 
 void * start_downloader()
 {
+  int run = 1;
+  unsigned int msg_prio;
   struct Download_data  * request;
   char buffer[sizeof( struct Download_data)];
-  mqd_t queue = mq_open ("/podcast_reader", O_RDONLY);
-  while (1)
+  mqd_t queue = mq_open (QUEUENAME, O_RDONLY);
+
+
+  while (run)
   {
-    mq_receive(queue, buffer, sizeof(struct Download_data), NULL);
+    mq_receive(queue, buffer, sizeof(struct Download_data), &msg_prio);
+    if (msg_prio == 1)
+    {
     request = (struct Download_data *) buffer;
 
-    clear();
-        mvprintw(0, 0, "%s", request->directory);
-        mvprintw(1, 0, "%s", request->filename);
-        mvprintw(2, 0, "%s", request->url);
+
+    chdir(READER_PATHS[MUSIC_DIRECTORY]);
+    mkdir(request->directory, 0700);
+    chdir(request->directory);
+    strcat(request->filename, ".mp3");
+
+    move(LINES-1,0);
+    clrtoeol();
+      printw("%s: %s", _("Downloading"), request->filename);
     refresh();
 
-    /*download_file(request->url, request->filename);*/
-  }
+    download_file(request->url, request->filename);
 
+    move(LINES-1,0);
+    clrtoeol();
+    refresh();
+    }
+    else
+    {
+      run = 0;
+    }
+  }
+  mq_close (queue);
   return NULL;
 }
 
