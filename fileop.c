@@ -122,9 +122,7 @@ int download_file(char * url, char * filename)
 
 /* REWORK
 
-  sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 %s", ddata->filename);
-  system(split_command);
-  unlink(ddata->filename);
+
 
   return NULL;
 }
@@ -137,6 +135,7 @@ void * start_downloader()
   unsigned int msg_prio;
   struct Download_data  * request;
   char buffer[sizeof( struct Download_data)];
+  char split_command[240];
   mqd_t queue = mq_open (QUEUENAME, O_RDONLY);
 
 
@@ -167,6 +166,9 @@ void * start_downloader()
     refresh();
 
     download_file(request->url, request->filename);
+    sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 %s", request->filename);
+    system(split_command);
+    unlink(request->filename);
 
     move(LINES-1,0);
     clrtoeol();
