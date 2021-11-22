@@ -47,7 +47,7 @@ char * get_enclosure(char * rss_file, int position)
 
 char * get_description(char * rss_file, int position)
 {
-  xmlTextReaderPtr reader = xmlReaderForFile(rss_file, NULL,0);
+  xmlTextReaderPtr reader = xmlReaderForFile(rss_file, NULL, XML_PARSE_NOCDATA);
 
   char * description_text = malloc(SCREENSIZE);
   const xmlChar * search_tag = (const xmlChar *)"description";

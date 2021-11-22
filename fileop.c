@@ -120,14 +120,6 @@ int download_file(char * url, char * filename)
 }
 
 
-/* REWORK
-
-
-
-  return NULL;
-}
-*/
-
 void * start_downloader()
 {
   int run = 1;
@@ -151,7 +143,7 @@ void * start_downloader()
     mkdir(request->directory, 0700);
     chdir(request->directory);
 
-    ord_num = 0;
+    ord_num = 1;
     while ( access( request->filename, F_OK ) == 0 )
     {
       ord_num++;
