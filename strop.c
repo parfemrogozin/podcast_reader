@@ -13,7 +13,9 @@ void remove_symbols(char *str)
            *str == ':' ||
            *str == '#' ||
            *str == '&' ||
-           *str == '-')
+           *str == '-' ||
+           *str == '$'
+           )
     {
       str++;
     }
