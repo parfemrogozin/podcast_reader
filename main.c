@@ -185,8 +185,8 @@ int main(void)
         replace_multi_space_with_single_space(description);
         clear();
         mvprintw(0, 0, "%s", description);
-        free(description);
         refresh();
+        free(description);
       }
     break;
 
