@@ -10,7 +10,6 @@ size_t decode7bit(unsigned char four_bytes[])
   {
     four_ints[i] = four_bytes[i];
     four_ints[i] = four_ints[i] << shift;
-    printf("Posun o %d\n", shift);
     shift -= 7;
   }
 
@@ -18,28 +17,45 @@ size_t decode7bit(unsigned char four_bytes[])
 }
 
 
-int main(int argc, char **argv)
+int remove_id3v2(char * filename)
 {
   FILE *mp3file;
   FILE *cutfile;
   size_t block_size;
+  char * temp_filename = "out.mp3";
   char read_buffer[BUFSIZ];
+  char first_bytes[3];
   unsigned char four_bytes[4];
 
-  mp3file = fopen(argv[1], "r");
-  fseek(mp3file, 6, SEEK_SET);
-  fread(four_bytes, 1, 4, mp3file);
-  block_size = decode7bit(four_bytes);
-  fseek(mp3file, block_size, SEEK_CUR);
-  cutfile = fopen("out.mp3", "w");
-  while ( feof(mp3file) == 0)
+  mp3file = fopen(filename, "r");
+  fread(first_bytes, 1, 3, mp3file);
+  if (first_bytes[0] == 'I' && first_bytes[1] == 'D' && first_bytes[2] == '3')
   {
-    fread(read_buffer, BUFSIZ, 1, mp3file);
-    fwrite(read_buffer, BUFSIZ, 1, cutfile);
+    fseek(mp3file, 3, SEEK_CUR);
+    fread(four_bytes, 1, 4, mp3file);
+    block_size = decode7bit(four_bytes);
+    fseek(mp3file, block_size, SEEK_CUR);
+    cutfile = fopen(temp_filename, "w");
+    while ( feof(mp3file) == 0)
+    {
+      fread(read_buffer, BUFSIZ, 1, mp3file);
+      fwrite(read_buffer, BUFSIZ, 1, cutfile);
+    }
+    fclose(mp3file);
+    fclose(cutfile);
+    rename(temp_filename, filename);
+    return 0;
   }
-  fclose(mp3file);
-  fclose(cutfile);
+  else
+  {
+    fprintf(stderr, "ID3v2 tag header not found. \n");
+    return 1;
+  }
+}
 
+int main(int argc, char **argv)
+{
+  remove_id3v2(argv[1]);
   return 0;
 }
 
