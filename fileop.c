@@ -157,6 +157,7 @@ void * start_downloader()
     refresh();
 
     download_file(request->url, request->filename);
+    /* add id3 command*/
     sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 %s", request->filename);
     system(split_command);
     unlink(request->filename);
