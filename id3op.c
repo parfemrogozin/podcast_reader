@@ -19,18 +19,21 @@ size_t decode7bit(unsigned char four_bytes[])
 
 int remove_id3v2(char * filename)
 {
+  int ret_code;
   FILE *mp3file;
-  FILE *cutfile;
-  size_t block_size;
-  char * temp_filename = "out.mp3";
-  char read_buffer[BUFSIZ];
   char first_bytes[3];
-  unsigned char four_bytes[4];
 
   mp3file = fopen(filename, "r");
   fread(first_bytes, 1, 3, mp3file);
+
   if (first_bytes[0] == 'I' && first_bytes[1] == 'D' && first_bytes[2] == '3')
   {
+    FILE *cutfile;
+    size_t block_size;
+    char * temp_filename = "out.mp3";
+    char read_buffer[BUFSIZ];
+    unsigned char four_bytes[4];
+
     fseek(mp3file, 3, SEEK_CUR);
     fread(four_bytes, 1, 4, mp3file);
     block_size = decode7bit(four_bytes);
@@ -41,16 +44,18 @@ int remove_id3v2(char * filename)
       fread(read_buffer, BUFSIZ, 1, mp3file);
       fwrite(read_buffer, BUFSIZ, 1, cutfile);
     }
-    fclose(mp3file);
     fclose(cutfile);
     rename(temp_filename, filename);
-    return 0;
+    ret_code = 0;
   }
   else
   {
     fprintf(stderr, "ID3v2 tag header not found. \n");
-    return 1;
+    ret_code = 1;
   }
+
+  fclose(mp3file);
+  return ret_code;
 }
 
 int main(int argc, char **argv)
