@@ -3,8 +3,6 @@
   #define ITEMSIZE 81
   #define SCREENSIZE 1920
   #define URLMAX 2048
-  #define BASENAMESIZE 17
-  #define SUFFIXSIZE 5
   #define QUEUENAME "/podcast_reader_requests"
 #endif
 
@@ -15,13 +13,12 @@ enum names_of_pahs
   LOCALE_PATH,
   SAVE_TEMPLATE
 };
-
+#include "id3op.h"
 /* TODO: Add status of download */
 struct Download_data
 {
-  char filename[BASENAMESIZE + SUFFIXSIZE];
-  char directory[ITEMSIZE];
   char * url;
+  struct id3v1 id3;
 };
 
 int set_paths(void);

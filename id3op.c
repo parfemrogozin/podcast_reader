@@ -2,8 +2,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "id3op.h"
 
-size_t decode7bit(unsigned char four_bytes[])
+
+static size_t decode7bit(unsigned char four_bytes[])
 {
   unsigned int four_ints[4];
   unsigned int shift = 21;
@@ -19,7 +21,7 @@ size_t decode7bit(unsigned char four_bytes[])
 }
 
 
-int remove_id3v2(char * filename)
+static int remove_id3v2(char * filename)
 {
   int ret_code;
   char first_bytes[3];
@@ -54,13 +56,12 @@ int remove_id3v2(char * filename)
   else
   {
     fclose(mp3file);
-    fprintf(stderr, "ID3v2 tag header not found. \n");
-    ret_code = 1;
+    ret_code = -1;
   }
   return ret_code;
 }
 
-off_t get_offset_id3v1(char * mp3filename)
+static off_t get_offset_id3v1(char * mp3filename)
 {
   int ret_value;
   char tag_buffer[4];
@@ -82,26 +83,42 @@ off_t get_offset_id3v1(char * mp3filename)
   return ret_value;
 }
 
-void remove_id3v1(char * mp3filename)
+static int remove_id3v1(char * mp3filename)
 {
+  int ret_code;
   off_t offset;
   offset = get_offset_id3v1(mp3filename);
   if (offset > 0)
   {
     truncate(mp3filename, offset);
+    ret_code = 0;
   }
   else
   {
-    fprintf(stderr, "ID3v1 tag header not found. \n");
+    ret_code = -1;
   }
-
+  return ret_code;
 }
 
-int main(int argc, char **argv)
+int remove_id3tags(char * mp3filename)
 {
-  char * mp3filename = argv[1];
   remove_id3v2(mp3filename);
   remove_id3v1(mp3filename);
   return 0;
 }
+
+int add_id3tags(char * mp3filename, struct id3v1 tags)
+{
+  char * tag = "TAG";
+  tags.genre = 186;
+  FILE *mp3file;
+  mp3file = fopen(mp3filename, "a");
+  fwrite(tag, 3, 1, mp3file);
+  fwrite(&tags,sizeof(tags), 1, mp3file);
+  fclose(mp3file);
+
+  return 0;
+}
+
+
 

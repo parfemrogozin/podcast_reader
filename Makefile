@@ -7,7 +7,7 @@ endif
 
 all: $(EXECUTABLE) po/cs/$(EXECUTABLE).mo
 
-$(EXECUTABLE): main.c fileop.c xmlop.c strop.c
+$(EXECUTABLE): main.c fileop.c xmlop.c strop.c id3op.c
 	gcc -g -o $@ $^ -std=gnu18 -pedantic -Wall -Wextra $(LIBS)
 
 po/cs/$(EXECUTABLE).mo: po/cs/$(EXECUTABLE).po

@@ -9,6 +9,8 @@
 #include <mqueue.h>
 
 #include "fileop.h"
+#include "strop.h"
+
 
 #include <locale.h>
 #include <libintl.h>
@@ -101,8 +103,6 @@ int count_lines(FILE *fp)
   return line_count;
 }
 
-
-
 int download_file(char * url, char * filename)
 {
   CURL * downloader;
@@ -119,7 +119,6 @@ int download_file(char * url, char * filename)
   return 0;
 }
 
-
 void * start_downloader()
 {
   int run = 1;
@@ -130,37 +129,41 @@ void * start_downloader()
   char split_command[240];
   mqd_t queue = mq_open (QUEUENAME, O_RDONLY);
 
-
   while (run)
   {
     mq_receive(queue, buffer, sizeof(struct Download_data), &msg_prio);
     if (msg_prio == 1)
     {
     request = (struct Download_data *) buffer;
-
-
+    char directory[31];
+    strncpy(directory, request->id3.artist, 30);
+    sanitize_filename(directory);
     chdir(READER_PATHS[MUSIC_DIRECTORY]);
-    mkdir(request->directory, 0700);
-    chdir(request->directory);
+    mkdir(directory, 0700);
+    chdir(directory);
 
     ord_num = 1;
-    while ( access( request->filename, F_OK ) == 0 )
+    char filename[30+1+3+1];
+    strncpy(filename, request->id3.album, 30);
+    sanitize_filename(filename);
+    while ( access( filename, F_OK ) == 0 )
     {
       ord_num++;
-      request->filename[strlen(request->filename)-1] = '0' + ord_num;
+      filename[strlen(filename)-1] = '0' + ord_num;
     }
-    strcat(request->filename, ".mp3");
+    strcat(filename, ".mp3");
 
     move(LINES-1,0);
     clrtoeol();
-      printw("%s: %s", _("Downloading"), request->filename);
+      printw("%s: %s", _("Downloading"), filename);
     refresh();
 
-    download_file(request->url, request->filename);
-    /* add id3 command*/
-    sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 %s", request->filename);
+    download_file(request->url, filename);
+    remove_id3tags(filename);
+    add_id3tags(filename, request->id3);
+    sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 %s", filename);
     system(split_command);
-    unlink(request->filename);
+    unlink(filename);
 
     move(LINES-1,0);
     clrtoeol();
@@ -174,7 +177,6 @@ void * start_downloader()
   mq_close (queue);
   return NULL;
 }
-
 
 char * create_feed_list(int *lines)
 {

@@ -168,7 +168,7 @@ int main(void)
       if (choice > 0)
       {
         current_feed = choice -1;
-        strncpy(download_data.directory, menu_items + ITEMSIZE * current_feed, ITEMSIZE - 1);
+        strncpy(download_data.id3.artist , menu_items + ITEMSIZE * current_feed, 30);
 
         lines = count_items(file_list + ITEMSIZE * current_feed);
         menu_items = realloc(menu_items, lines * ITEMSIZE);
@@ -191,22 +191,15 @@ int main(void)
     break;
 
     case 3:
-      remove_symbols(download_data.directory);
-      replace_multi_space_with_single_space(download_data.directory);
-      replace_char(download_data.directory, ' ', '_');
-
-      strncpy(download_data.filename, menu_items + ITEMSIZE * (highlight - 1), BASENAMESIZE);
-      download_data.filename[BASENAMESIZE -1] = '\0';
-      remove_symbols(download_data.filename);
-      replace_multi_space_with_single_space(download_data.filename);
-      replace_char(download_data.filename, ' ', '_');
-
+      strncpy(download_data.id3.album, menu_items + ITEMSIZE * (highlight - 1), 30);
       download_data.url = (char *) get_enclosure(file_list + ITEMSIZE * current_feed, choice);
+
       clear();
-        mvprintw(0,0, "%s: %s", _("Directory"), download_data.directory);
+        mvprintw(0,0, "%s: %s", _("Directory"), download_data.id3.artist);
         mvprintw(1,0, "%s: %s", _("URL"), download_data.url);
-        mvprintw(2,0, "%s: %s", _("Filename"), download_data.filename);
+        mvprintw(2,0, "%s: %s", _("Filename"), download_data.id3.album);
       refresh();
+
       mq_send(download_queue, (char *) &download_data, sizeof(download_data), 1);
 
       level = 2;

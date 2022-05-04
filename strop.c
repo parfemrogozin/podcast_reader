@@ -74,6 +74,13 @@ void replace_multi_space_with_single_space(char *str)
   *dest = '\0';
 }
 
+void sanitize_filename(char *str)
+{
+  remove_symbols(str);
+  replace_multi_space_with_single_space(str);
+  replace_char(str, ' ', '_');
+}
+
 int find_string_in_array(char * str_array, char * string, int start, int lines)
 {
   int position = 0;
