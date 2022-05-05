@@ -161,7 +161,7 @@ void * start_downloader()
     download_file(request->url, filename);
     remove_id3tags(filename);
     add_id3tags(filename, request->id3);
-    sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 %s", filename);
+    sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 -g r%%[@o,@N=1,@t=#t@N] %s", filename);
     system(split_command);
     unlink(filename);
 

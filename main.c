@@ -192,12 +192,13 @@ int main(void)
 
     case 3:
       strncpy(download_data.id3.album, menu_items + ITEMSIZE * (highlight - 1), 30);
+      strncpy(download_data.id3.title, menu_items + ITEMSIZE * (highlight - 1), 8);
       download_data.url = (char *) get_enclosure(file_list + ITEMSIZE * current_feed, choice);
 
       clear();
-        mvprintw(0,0, "%s: %s", _("Directory"), download_data.id3.artist);
-        mvprintw(1,0, "%s: %s", _("URL"), download_data.url);
-        mvprintw(2,0, "%s: %s", _("Filename"), download_data.id3.album);
+        mvprintw(0,0, "%s: %s", _("Podcast"), download_data.id3.artist);
+        mvprintw(1,0, "%s: %s", _("Episode"), download_data.id3.album);
+        mvprintw(2,0, "%s: %s", _("URL"), download_data.url);
       refresh();
 
       mq_send(download_queue, (char *) &download_data, sizeof(download_data), 1);
