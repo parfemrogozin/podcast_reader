@@ -5,23 +5,14 @@
 void remove_symbols(char *str)
 {
   char *dest = str;
-
-  while (*str != '\0')
+  while (*str)
   {
-    while (*str == '"' ||
-           *str == '\'' ||
-           *str == ':' ||
-           *str == '#' ||
-           *str == '&' ||
-           *str == '-' ||
-           *str == '$'
-           )
+    if ( (*str < 48 && *str > 0 && *str != 32 ) || (*str < 65 && *str > 57 )  || (*str < 97 && *str > 90 ) || (*str > 122) )
     {
       str++;
     }
-  *dest++ = *str++;
+    *dest++ = *str++;
   }
-
   *dest = '\0';
 }
 
