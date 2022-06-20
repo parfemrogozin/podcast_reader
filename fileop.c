@@ -20,7 +20,7 @@
   #define _(STRING) gettext(STRING)
 #endif
 
-char READER_PATHS[4][80];
+char READER_PATHS[4][80] = {0};
 
 int set_paths(void)
 {
@@ -67,7 +67,7 @@ int set_paths(void)
 
 void add_url(void)
 {
-  char rss_url[80];
+  char rss_url[80] = {0};
   FILE *url_list;
   url_list = fopen(READER_PATHS[URL_LIST], "a");
 
@@ -83,7 +83,7 @@ void add_url(void)
 
 int count_lines(FILE *fp)
 {
-  int line_count;
+  unsigned int line_count  = 0;
   int c;
 
   if (fp == NULL)
@@ -100,9 +100,14 @@ int count_lines(FILE *fp)
     }
   }
   rewind(fp);
+  mvprintw(LINES-2, 0, "lines: %d", line_count);
   return line_count;
 }
 
+/*
+ * in download_file (
+ *  url=0x5575e545f410 <error: Cannot access memory at address 0x5575e545f410>, filename=0x7f1e29157c40 "Timcast_IRL_545_Elon_Says_T.mp3")
+*/
 int download_file(char * url, char * filename)
 {
   CURL * downloader;
@@ -126,7 +131,7 @@ void * start_downloader()
   unsigned int msg_prio;
   struct Download_data  * request;
   char buffer[sizeof( struct Download_data)];
-  char split_command[240];
+  char split_command[240] = {0};
   mqd_t queue = mq_open (QUEUENAME, O_RDONLY);
 
   while (run)
@@ -135,7 +140,7 @@ void * start_downloader()
     if (msg_prio == 1)
     {
     request = (struct Download_data *) buffer;
-    char directory[31];
+    char directory[31] = {0};
     strncpy(directory, request->id3.artist, 30);
     sanitize_filename(directory);
     chdir(READER_PATHS[MUSIC_DIRECTORY]);
@@ -143,7 +148,7 @@ void * start_downloader()
     chdir(directory);
 
     ord_num = 1;
-    char filename[30+1+3+1];
+    char filename[30+1+3+1] = {0};
     strncpy(filename, request->id3.album, 30);
     sanitize_filename(filename);
     while ( access( filename, F_OK ) == 0 )
@@ -184,7 +189,7 @@ char * create_feed_list(int *lines)
   FILE *url_list;
   url_list = fopen(READER_PATHS[URL_LIST], "r");
   *lines = count_lines(url_list);
-  char feed_address[ITEMSIZE];
+  char feed_address[ITEMSIZE] = {0};
   char * file_names = malloc(*lines * ITEMSIZE);
   for (int i = 0; i < *lines; ++i)
   {

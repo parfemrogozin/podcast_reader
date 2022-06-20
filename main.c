@@ -1,4 +1,5 @@
 #include <string.h>
+/* replace with xmlstring */
 #include <unistd.h>
 #include <pthread.h>
 #include <mqueue.h>
@@ -98,7 +99,7 @@ int main(void)
   int lines = 0;
   char * menu_items;
   char * item;
-  char search_term[80];
+  char search_term[80] = {0};
   int files = 0;
   int choice = -1;
   int highlight = 1;

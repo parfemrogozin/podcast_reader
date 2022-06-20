@@ -5,7 +5,8 @@
 void remove_symbols(char *str)
 {
   char *dest = str;
-  while (*str)
+  /* xmlGetUTF8Char () */
+  while ( *str != '\0' )
   {
     if ( (*str < 48 && *str > 0 && *str != 32 ) || (*str < 65 && *str > 57 )  || (*str < 97 && *str > 90 ) || (*str > 122) )
     {
