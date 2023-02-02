@@ -135,7 +135,7 @@ int read_feed(char * rss_file, char * menu_items)
         continue;
       }
     }
-    if (is_title == 1 && type == 3)
+    if ( is_title == 1 && (type == 3 || type == 4) )
     {
       strncpy (menu_items + ITEMSIZE * i, (char *) xmlTextReaderConstValue(reader), ITEMSIZE - 1);
       ++i;

@@ -8,11 +8,27 @@ void remove_symbols(char *str)
   /* xmlGetUTF8Char () */
   while ( *str != '\0' )
   {
-    if ( (*str < 48 && *str > 0 && *str != 32 ) || (*str < 65 && *str > 57 )  || (*str < 97 && *str > 90 ) || (*str > 122) )
+    /*if ( (*str < 47 && *str > 0 && *str != 32 ) || (*str < 65 && *str > 57 )  || (*str < 97 && *str > 90 ) || (*str > 122) )*/
+    if ( *str < 47 && *str != 32)
     {
       str++;
     }
-    *dest++ = *str++;
+    else if ( *str > 57 &&  *str < 65)
+    {
+      str++;
+    }
+    else if ( *str > 90  && *str < 97)
+    {
+      str++;
+    }
+    else if ( *str > 122 )
+    {
+      str++;
+    }
+    else
+    {
+      *dest++ = *str++;
+    }
   }
   *dest = '\0';
 }
