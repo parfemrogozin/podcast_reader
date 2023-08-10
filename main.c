@@ -27,7 +27,7 @@ enum Level
 
 enum Commands
 {
-  QUIT = -1,
+  BACK = -1,
   ADD_FEED = -2,
   GET_INFO = -3,
   SEARCH = -4
@@ -113,7 +113,7 @@ int read_controls(unsigned int * highlight, unsigned int lines)
     break;
 
     case 'q':
-      choice = QUIT;
+      choice = BACK;
     break;
 
     case 'a':
@@ -257,28 +257,37 @@ int main(void)
       ++state.level;
       if (state.level < 3) state.highlight = 1;
     }
-    if (state.choice == -1)
+    else
     {
-      --state.level;
-      state.highlight = 1;
-    }
-    if (state.choice == -2)
-    {
-      add_url();
-      free(rss.ptr);
-      mvprintw(LINES-1, 0, "%s", _("Downloading RSS"));
-      rss.ptr = create_feed_list(&rss.count);
-    }
-    if (state.choice == -4)
-    {
-      echo();
-      mvprintw(LINES-1, 0,"%s", _("Find: "));
-      char search_term[80];
-      getstr(search_term);
-      noecho();
-      state.highlight = find_string_in_array(menu.ptr, search_term, 0, menu.count);
-    }
+      switch (state.choice)
+      {
 
+      case BACK:
+        --state.level;
+        state.highlight = 1;
+        break;
+
+      case ADD_FEED:
+        add_url();
+        free(rss.ptr);
+        mvprintw(LINES-1, 0, "%s", _("Downloading RSS"));
+        rss.ptr = create_feed_list(&rss.count);
+        break;
+
+      case SEARCH:
+        echo();
+        mvprintw(LINES-1, 0,"%s", _("Find: "));
+        char search_term[80];
+        getstr(search_term);
+        noecho();
+        state.highlight = find_string_in_array(menu.ptr, search_term, 0, menu.count);
+        break;
+
+      default:
+        break;
+
+      }
+    }
   }
   while(state.level > PROGRAM_EXIT);
 

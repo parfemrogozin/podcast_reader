@@ -31,8 +31,8 @@ msgid "Enter RSS feed address: "
 msgstr "Zadejte adresu RSS souboru: "
 
 #: main.c:261
-msgid "Najdi: "
-msgstr ""
+msgid "Find: "
+msgstr "Najdi: "
 
 #: main.c:209
 msgid "Finishing downloads..."
