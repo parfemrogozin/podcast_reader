@@ -18,15 +18,15 @@
 
 extern char READER_PATHS[4][80];
 
-void print_menu(const char * titles, int lines, int highlight)
+void print_menu(const char * titles, int record_count, int highlight)
 {
   int page_size = LINES - 1;
   int page_start = ((highlight - 1) / page_size) * page_size;
   erase();
-  for(int i = 0; i < page_size && i < lines; ++i)
+  for(int i = 0; i < page_size && i < record_count; ++i)
   {
     int array_step = ITEMSIZE * (i + page_start);
-    if ((i + page_start) < lines)
+    if ((i + page_start) <  record_count)
     {
       if(highlight == i + page_start + 1)
       {
@@ -96,9 +96,8 @@ return choice;
 
 int main(void)
 {
-  int lines = 0;
+  int record_count = 0;
   char * menu_items;
-  char * item;
   char search_term[80] = {0};
   int files = 0;
   int choice = -1;
@@ -140,8 +139,8 @@ int main(void)
   move(LINES-1,0);
   clrtoeol();
   refresh();
-  lines = files;
-  menu_items = malloc(lines * ITEMSIZE);
+  record_count = files;
+  menu_items = malloc(record_count * ITEMSIZE);
 
   do
   {
@@ -149,20 +148,18 @@ int main(void)
     {
 
       case 1:
-        lines = files;
+        record_count = files;
         if (choice < 0)
         {
-          menu_items = realloc(menu_items, lines * ITEMSIZE);
-          memset(menu_items,'\0', lines * ITEMSIZE);
+          menu_items = realloc(menu_items, record_count * ITEMSIZE);
+          memset(menu_items,'\0', record_count * ITEMSIZE);
           for(int i = 0; i < files; ++i)
           {
-            item = read_single_value(file_list + ITEMSIZE * i, (const xmlChar *)"title");
-            strncpy(menu_items + ITEMSIZE * i, item, ITEMSIZE - 2);
-            free(item);
+            copy_single_content(file_list + ITEMSIZE * i, 2, "title", 1, menu_items + ITEMSIZE * i, ITEMSIZE - 1);
           }
           highlight = current_feed + 1;
         }
-        print_menu(menu_items, lines, highlight);
+        print_menu(menu_items, record_count, highlight);
       break;
 
     case 2:
@@ -171,17 +168,18 @@ int main(void)
         current_feed = choice -1;
         strncpy(download_data.id3.artist , menu_items + ITEMSIZE * current_feed, 30);
 
-        lines = count_items(file_list + ITEMSIZE * current_feed);
-        menu_items = realloc(menu_items, lines * ITEMSIZE);
-        memset(menu_items,'\0', lines * ITEMSIZE);
+        record_count = count_nodes(file_list + ITEMSIZE * current_feed, "item", 2);
+        menu_items = realloc(menu_items, record_count * ITEMSIZE);
+        memset(menu_items,'\0', record_count * ITEMSIZE);
 
         read_feed(file_list + ITEMSIZE * current_feed, menu_items);
       }
-      print_menu(menu_items, lines, highlight);
+      print_menu(menu_items, record_count, highlight);
       if (choice == -3)
       {
 
-        char * description = (char *) get_description(file_list + ITEMSIZE * current_feed, highlight);
+        char * description = malloc(SCREENSIZE + 1);
+        copy_single_content(file_list + ITEMSIZE * current_feed, 3, "description", highlight, description, SCREENSIZE - 1);
         strip_html(description);
         replace_multi_space_with_single_space(description);
         clear();
@@ -194,7 +192,7 @@ int main(void)
     case 3:
       strncpy(download_data.id3.album, menu_items + ITEMSIZE * (highlight - 1), 30);
       strncpy(download_data.id3.title, menu_items + ITEMSIZE * (highlight - 1), 8);
-      download_data.url = (char *) get_enclosure(file_list + ITEMSIZE * current_feed, choice);
+      download_data.url = get_enclosure(file_list + ITEMSIZE * current_feed, choice);
 
       clear();
         mvprintw(0,0, "%s: %s", _("Podcast"), download_data.id3.artist);
@@ -211,7 +209,7 @@ int main(void)
     break;
   }
 
-    choice = read_controls(&highlight, lines);
+    choice = read_controls(&highlight, record_count);
 
 
     if(choice > 0)
@@ -239,7 +237,7 @@ int main(void)
       mvprintw(LINES-1, 0,"%s", _("Find: "));
       getstr(search_term);
       noecho();
-      highlight = find_string_in_array(menu_items, search_term, 0, lines);
+      highlight = find_string_in_array(menu_items, search_term, 0, record_count);
     }
 
   }

@@ -100,7 +100,6 @@ int count_lines(FILE *fp)
     }
   }
   rewind(fp);
-  mvprintw(LINES-2, 0, "lines: %d", line_count);
   return line_count;
 }
 
@@ -164,6 +163,7 @@ void * start_downloader()
     refresh();
 
     download_file(request->url, filename);
+    free(request->url);
     remove_id3tags(filename);
     add_id3tags(filename, request->id3);
     sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 -g r%%[@o,@N=1,@t=#t@N] %s", filename);
@@ -183,15 +183,15 @@ void * start_downloader()
   return NULL;
 }
 
-char * create_feed_list(int *lines)
+char * create_feed_list(int *record_count)
 {
   int cursor_pos = 11;
   FILE *url_list;
   url_list = fopen(READER_PATHS[URL_LIST], "r");
-  *lines = count_lines(url_list);
+  *record_count = count_lines(url_list);
   char feed_address[ITEMSIZE] = {0};
-  char * file_names = malloc(*lines * ITEMSIZE);
-  for (int i = 0; i < *lines; ++i)
+  char * file_names = malloc(*record_count * ITEMSIZE);
+  for (int i = 0; i < *record_count; ++i)
   {
     fgets(feed_address,ITEMSIZE,url_list);
     strtok(feed_address, "\n");

@@ -1,5 +1,4 @@
-int count_items(char * rss_file);
-int read_feed(char * rss_file, char * menu_items);
-char * get_enclosure(char * rss_file, int position);
-char * get_description(char * rss_file, int position);
-char * read_single_value(char * rss_file, const xmlChar * search_term);
+unsigned int count_nodes(const char * file_name, const char * tag_name, const int level);
+void read_feed(char * rss_file, char * menu_items);
+char * get_enclosure(char * rss_file, const unsigned int position);
+void copy_single_content(char * rss_file, const int min_depth, const char * enclosing_tag, unsigned int position, char * free_slot, int free_size);
