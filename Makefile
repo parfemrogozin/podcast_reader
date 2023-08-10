@@ -29,7 +29,6 @@ install:
 uninstall:
 	$(RM) $(PREFIX)/.local/bin/$(EXECUTABLE)
 	$(RM) $(PREFIX)/.local/share/locale/cs/LC_MESSAGES/$(EXECUTABLE).mo
-	$(RM) $(PREFIX)/.config/rss_feed_list.txt
 
 clean:
 	$(RM) $(EXECUTABLE) po/cs/*.mo

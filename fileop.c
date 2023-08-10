@@ -183,7 +183,7 @@ void * start_downloader()
   return NULL;
 }
 
-char * create_feed_list(int *record_count)
+char * create_feed_list(unsigned int *record_count)
 {
   int cursor_pos = 11;
   FILE *url_list;
@@ -191,7 +191,7 @@ char * create_feed_list(int *record_count)
   *record_count = count_lines(url_list);
   char feed_address[ITEMSIZE] = {0};
   char * file_names = malloc(*record_count * ITEMSIZE);
-  for (int i = 0; i < *record_count; ++i)
+  for (unsigned int i = 0; i < *record_count; ++i)
   {
     fgets(feed_address,ITEMSIZE,url_list);
     strtok(feed_address, "\n");

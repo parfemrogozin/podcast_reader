@@ -24,6 +24,6 @@ struct Download_data
 int set_paths(void);
 void add_url(void);
 int count_lines(FILE *fp);
-char * create_feed_list(int *record_count);
+char * create_feed_list(unsigned int *record_count);
 int download_file(char * url, char * filename);
 void * start_downloader();

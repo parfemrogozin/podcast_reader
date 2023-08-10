@@ -1,9 +1,9 @@
 #include <libxml/xmlreader.h>
 #include <string.h>
 #include <stdbool.h>
-
-#include "fileop.h"
 #include "xmlop.h"
+
+#define ITEMSIZE 81
 
 static bool is_node(xmlTextReaderPtr reader, const xmlChar * reader_interned_string, const int level)
 {
@@ -91,7 +91,9 @@ char * get_enclosure(char * rss_file, const unsigned int position)
       count++;
       if (count == position)
       {
-        return (char *) xmlTextReaderGetAttribute(reader, (const xmlChar *)"url");
+        char * enclosure =  (char *) xmlTextReaderGetAttribute(reader, (const xmlChar *)"url");
+        xmlFreeTextReader(reader);
+        return enclosure;
       }
     }
   }
