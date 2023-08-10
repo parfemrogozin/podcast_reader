@@ -223,7 +223,7 @@ int main(void)
         read_feed(rss.ptr + ITEMSIZE * state.current_feed, menu.ptr);
       }
       print_menu(menu, state.highlight);
-      if (state.choice == -3)
+      if (state.choice == GET_INFO)
       {
         show_description(rss.ptr + ITEMSIZE * state.current_feed, state.highlight);
       }
