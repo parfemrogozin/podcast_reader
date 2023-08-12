@@ -1,6 +1,6 @@
 #define _GNU_SOURCE
 #include <string.h>
-#include "strop.h"
+#include "include/strop.h"
 
 void remove_symbols(char *str)
 {

@@ -2,7 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "id3op.h"
+#include "include/id3op.h"
 
 
 static size_t decode7bit(unsigned char four_bytes[])

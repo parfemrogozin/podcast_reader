@@ -9,29 +9,17 @@
 #include <ncurses.h>
 #include <libxml/xmlreader.h>
 
-#include "fileop.h"
-#include "xmlop.h"
-#include "strop.h"
+#include "include/pr_const.h"
+#include "include/gui.h"
+#include "include/fileop.h"
+#include "include/xmlop.h"
+#include "include/strop.h"
 
 #define _(STRING) gettext(STRING)
 
 extern char READER_PATHS[4][80];
 
-enum Level
-{
-  PROGRAM_EXIT = 0,
-  FEED_LIST = 1,
-  EPISODE_LIST = 2,
-  SELECTED_EPISODE = 3
-};
 
-enum Commands
-{
-  BACK = -1,
-  ADD_FEED = -2,
-  GET_INFO = -3,
-  SEARCH = -4
-};
 
 struct MyArray
 {
@@ -54,95 +42,11 @@ static void my_init_screen(void)
   textdomain ("podcast_reader");
 
   initscr();
+  nodelay(stdscr, FALSE);
   keypad(stdscr, TRUE);
   noecho();
   cbreak();
   curs_set(0);
-}
-
-void print_menu(struct MyArray menu, unsigned int highlight)
-{
-  unsigned int page_size = LINES - 1;
-  unsigned int page_start = ((highlight - 1) / page_size) * page_size;
-  erase();
-  for(unsigned int i = 0; i < page_size && i < menu.count; ++i)
-  {
-    int array_step = ITEMSIZE * (i + page_start);
-    if ((i + page_start) <  menu.count)
-    {
-      if(highlight == i + page_start + 1)
-      {
-        attron(A_REVERSE);
-        mvprintw(i, 0, "%s", menu.ptr + array_step);
-        attroff(A_REVERSE);
-      }
-      else
-      {
-        mvprintw(i, 0, "%s", menu.ptr  + array_step);
-      }
-    }
-  }
-  refresh();
-}
-
-
-
-int read_controls(unsigned int * highlight, unsigned int lines)
-{
-  int c = getch();
-  int choice = 0;
-
-  switch(c)
-  {
-    case KEY_UP:
-      if (*highlight > 1)
-      {
-        --*highlight;
-      }
-      break;
-
-    case KEY_DOWN:
-      if(*highlight < lines)
-      {
-        ++*highlight;
-      }
-    break;
-
-    case 10:
-      choice = *highlight;
-    break;
-
-    case 'q':
-      choice = BACK;
-    break;
-
-    case 'a':
-      choice = ADD_FEED;
-    break;
-
-    case 'i':
-      choice = GET_INFO;
-    break;
-
-    case '/':
-      choice = SEARCH;
-    break;
-
-    default:
-    break;
-  }
-return choice;
-}
-
-void show_description(char * rss_file, const int highlight)
-{
-  char description[SCREENSIZE + 1];
-  copy_single_content(rss_file, 3, "description", highlight, description, SCREENSIZE - 1);
-  strip_html(description);
-  replace_multi_space_with_single_space(description);
-  clear();
-  mvprintw(0, 0, "%s", description);
-  refresh();
 }
 
 
@@ -172,14 +76,13 @@ int main(void)
   dq_attr.mq_maxmsg = 10;
   dq_attr.mq_msgsize = sizeof(download_data);
   dq_attr.mq_curmsgs = 0;
+  download_queue = mq_open (QUEUENAME,  O_WRONLY | O_CREAT,  0600, &dq_attr);
+  pthread_create(&downloader_thread_id, NULL, start_downloader, NULL);
 
   set_paths();
   my_init_screen();
 
   LIBXML_TEST_VERSION
-
-  download_queue = mq_open (QUEUENAME,  O_WRONLY | O_CREAT,  0600, &dq_attr);
-  pthread_create(&downloader_thread_id, NULL, start_downloader, NULL);
 
   mvprintw(LINES-1, 0, "%s", _("Downloading RSS"));
   refresh();
@@ -207,7 +110,7 @@ int main(void)
           }
           state.highlight = state.current_feed + 1;
         }
-        print_menu(menu, state.highlight);
+        print_menu(menu.ptr, menu.count, state.highlight);
       break;
 
     case EPISODE_LIST:
@@ -222,7 +125,7 @@ int main(void)
 
         read_feed(rss.ptr + ITEMSIZE * state.current_feed, menu.ptr);
       }
-      print_menu(menu, state.highlight);
+      print_menu(menu.ptr, menu.count, state.highlight);
       if (state.choice == GET_INFO)
       {
         show_description(rss.ptr + ITEMSIZE * state.current_feed, state.highlight);

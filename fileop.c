@@ -8,8 +8,9 @@
 #include <pthread.h>
 #include <mqueue.h>
 
-#include "fileop.h"
-#include "strop.h"
+#include "include/pr_const.h"
+#include "include/fileop.h"
+#include "include/strop.h"
 
 
 #include <locale.h>
@@ -21,6 +22,24 @@
 #endif
 
 char READER_PATHS[4][80] = {0};
+
+
+static int count_lines(FILE *fp)
+{
+  unsigned int line_count  = 0;
+  int c;
+
+  for (c = getc(fp); c != EOF; c = getc(fp))
+  {
+    if (c == '\n')
+    {
+      line_count++;
+    }
+  }
+  rewind(fp);
+  return line_count;
+}
+
 
 int set_paths(void)
 {
@@ -81,27 +100,7 @@ void add_url(void)
   fclose(url_list);
 }
 
-int count_lines(FILE *fp)
-{
-  unsigned int line_count  = 0;
-  int c;
 
-  if (fp == NULL)
-  {
-    printf(_("Could not open file %s"), READER_PATHS[URL_LIST]);
-    return -1;
-  }
-
-  for (c = getc(fp); c != EOF; c = getc(fp))
-  {
-    if (c == '\n')
-    {
-      line_count++;
-    }
-  }
-  rewind(fp);
-  return line_count;
-}
 
 /*
  * in download_file (
@@ -202,4 +201,14 @@ char * create_feed_list(unsigned int *record_count)
   }
   fclose(url_list);
   return file_names;
+}
+
+void get_feed_list()
+{
+  FILE *url_list;
+  if( access(READER_PATHS[URL_LIST], R_OK ) == 0 )
+  {
+    url_list = fopen(READER_PATHS[URL_LIST], "r");
+  }
+
 }
