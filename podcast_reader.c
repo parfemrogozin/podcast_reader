@@ -1,13 +1,14 @@
 #include <string.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <mqueue.h>
+#include <stdbool.h>
+
 
 #include <locale.h>
 #include <libintl.h>
 
 #include <ncurses.h>
 #include <libxml/xmlreader.h>
+#include <curl/curl.h>
 
 #include "include/pr_const.h"
 #include "include/gui.h"
@@ -19,22 +20,6 @@
 
 extern char READER_PATHS[4][80];
 
-
-
-struct MyArray
-{
-  unsigned int count;
-  char * ptr;
-};
-
-struct State
-{
-  enum Level level;
-  unsigned int highlight;
-  int choice;
-  unsigned int current_feed;
-};
-
 static void my_init_screen(void)
 {
   setlocale(LC_ALL, "");
@@ -42,7 +27,7 @@ static void my_init_screen(void)
   textdomain ("podcast_reader");
 
   initscr();
-  nodelay(stdscr, FALSE);
+  nodelay(stdscr, TRUE);
   keypad(stdscr, TRUE);
   noecho();
   cbreak();
@@ -56,86 +41,78 @@ int main(void)
     menu.count = 0;
     menu.ptr = NULL;
 
-  struct MyArray rss;
-    rss.count = 0;
-    rss.ptr = NULL;
-
-
   struct State state;
     state.level = FEED_LIST;
-    state.highlight = 1;
-    state.choice = -1;
     state.current_feed = 0;
-    rss.count = 0;
+    state.highlight = 1;
+
+  char feed_file[80] = {0};
 
   struct Download_data download_data;
-  pthread_t downloader_thread_id;
-  struct mq_attr dq_attr;
-  mqd_t download_queue;
-  dq_attr.mq_flags = 0;
-  dq_attr.mq_maxmsg = 10;
-  dq_attr.mq_msgsize = sizeof(download_data);
-  dq_attr.mq_curmsgs = 0;
-  download_queue = mq_open (QUEUENAME,  O_WRONLY | O_CREAT,  0600, &dq_attr);
-  pthread_create(&downloader_thread_id, NULL, start_downloader, NULL);
 
   set_paths();
   my_init_screen();
+  while ( 0 == (state.rss_count = get_feed_list()) )
+  {
+    add_url();
+  }
 
   LIBXML_TEST_VERSION
-
-  mvprintw(LINES-1, 0, "%s", _("Downloading RSS"));
-  refresh();
-  rss.ptr = create_feed_list(&rss.count);
-  move(LINES-1,0);
-  clrtoeol();
-  refresh();
-  menu.count = rss.count;
+  menu.count = state.rss_count;
   menu.ptr = malloc(menu.count * ITEMSIZE);
+
+  bool level_change = true;
+  int key_press = ERR;
+
+  CURLM * multi_handle = curl_multi_init();
+  int active_downloads;
 
   do
   {
     switch (state.level)
     {
-
       case FEED_LIST:
-        menu.count = rss.count;
-        if (state.choice < 0)
+
+        if ( level_change )
         {
+          menu.count = state.rss_count;
           menu.ptr = realloc(menu.ptr, menu.count * ITEMSIZE);
           memset(menu.ptr,'\0', menu.count * ITEMSIZE);
-          for(unsigned int i = 0; i < rss.count; ++i)
+          for(unsigned int i = 0; i < state.rss_count; ++i)
           {
-            copy_single_content(rss.ptr + ITEMSIZE * i, 2, "title", 1, menu.ptr + ITEMSIZE * i, ITEMSIZE - 1);
+            sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], i);
+            copy_single_content(feed_file, 2, "title", 1, menu.ptr + ITEMSIZE * i, ITEMSIZE - 1);
           }
           state.highlight = state.current_feed + 1;
+          level_change = false;
         }
-        print_menu(menu.ptr, menu.count, state.highlight);
+          print_menu(menu.ptr, menu.count, state.highlight);
       break;
 
     case EPISODE_LIST:
-      if (state.choice > 0)
-      {
-        state.current_feed = state.choice -1;
-        strncpy(download_data.id3.artist , menu.ptr + ITEMSIZE * state.current_feed, 30);
-
-        menu.count = count_nodes(rss.ptr + ITEMSIZE * state.current_feed, "item", 2);
-        menu.ptr = realloc(menu.ptr, menu.count * ITEMSIZE);
-        memset(menu.ptr,'\0', menu.count * ITEMSIZE);
-
-        read_feed(rss.ptr + ITEMSIZE * state.current_feed, menu.ptr);
-      }
+        if ( level_change )
+        {
+          state.current_feed = state.highlight -1;
+          state.highlight = 1;
+          sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], state.current_feed);
+          strncpy(download_data.id3.artist , menu.ptr + ITEMSIZE * state.current_feed, 30);
+          menu.count = count_nodes(feed_file, "item", 2);
+          menu.ptr = realloc(menu.ptr, menu.count * ITEMSIZE);
+          memset(menu.ptr,'\0', menu.count * ITEMSIZE);
+          read_feed(feed_file, menu.ptr);
+          level_change = false;
+        }
       print_menu(menu.ptr, menu.count, state.highlight);
-      if (state.choice == GET_INFO)
-      {
-        show_description(rss.ptr + ITEMSIZE * state.current_feed, state.highlight);
-      }
+
+      /*show_description(feed_file, state.highlight);*/
+
     break;
 
     case SELECTED_EPISODE:
+      sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], state.current_feed);
       strncpy(download_data.id3.album, menu.ptr + ITEMSIZE * (state.highlight - 1), 30);
       strncpy(download_data.id3.title, menu.ptr + ITEMSIZE * (state.highlight - 1), 8);
-      download_data.url = get_enclosure(rss.ptr + ITEMSIZE * state.current_feed, state.choice);
+      download_data.url = get_enclosure(feed_file, state.highlight);
 
       clear();
         mvprintw(0,0, "%s: %s", _("Podcast"), download_data.id3.artist);
@@ -143,8 +120,23 @@ int main(void)
         mvprintw(2,0, "%s: %s", _("URL"), download_data.url);
       refresh();
 
-      mq_send(download_queue, (char *) &download_data, sizeof(download_data), 1);
+      set_download_destination(&download_data);
+      char full_path[120];
+      strcpy(full_path, download_data.dest_dir);
+      strcat(full_path, "/");
+      strcat(full_path, download_data.dest_file);
+      FILE * dest_file = fopen(download_data.dest_file, "w");
 
+      CURL *curl = curl_easy_init();
+      curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+      curl_easy_setopt(curl, CURLOPT_WRITEDATA, dest_file);
+      curl_easy_setopt(curl, CURLOPT_URL, download_data.url);
+      /*curl_easy_perform(curl);
+      curl_easy_cleanup(curl);
+      fclose(dest_file);*/
+      curl_multi_add_handle(multi_handle, curl);
+
+      level_change = false;
       state.level = EPISODE_LIST;
     break;
 
@@ -152,65 +144,59 @@ int main(void)
     break;
   }
 
-    state.choice = read_controls(&state.highlight, menu.count);
-
-
-    if(state.choice > 0)
+    while (ERR == (key_press = getch()) )
     {
-      ++state.level;
-      if (state.level < 3) state.highlight = 1;
+      curl_multi_perform(multi_handle, &active_downloads);
     }
-    else
+    switch (key_press)
     {
-      switch (state.choice)
-      {
+      case 10:
+        ++state.level;
+        level_change = true;
+        break;
 
-      case BACK:
+      case KEY_UP:
+        if (state.highlight > 1)
+        {
+          --state.highlight;
+        }
+        break;
+
+      case KEY_DOWN:
+        if(state.highlight < menu.count)
+        {
+          ++state.highlight;
+        }
+        break;
+
+      case 'q':
         --state.level;
-        state.highlight = 1;
-        break;
+          state.highlight = 1;
+          level_change = true;
+          break;
 
-      case ADD_FEED:
-        add_url();
-        free(rss.ptr);
-        mvprintw(LINES-1, 0, "%s", _("Downloading RSS"));
-        rss.ptr = create_feed_list(&rss.count);
-        break;
-
-      case SEARCH:
-        echo();
-        mvprintw(LINES-1, 0,"%s", _("Find: "));
-        char search_term[80];
-        getstr(search_term);
-        noecho();
-        state.highlight = find_string_in_array(menu.ptr, search_term, 0, menu.count);
-        break;
-
-      default:
-        break;
-
-      }
+        default:
+          break;
     }
+
+
+
+
   }
   while(state.level > PROGRAM_EXIT);
-
-
   clear();
-  mvprintw(LINES-2,0, "%s", _("Wait for downloads..."));
+  mvprintw(LINES - 1, 0, "%s", _("Wait for downloads..."));
   refresh();
-  free(menu.ptr);
-  for (unsigned int i = 0; i < rss.count; i++)
+
+  while ( active_downloads )
   {
-    unlink(rss.ptr + ITEMSIZE * i);
+    curl_multi_perform(multi_handle, &active_downloads);
   }
-  free(rss.ptr);
 
-  mq_send(download_queue, (char *) &download_data, sizeof(download_data), 0);
-  pthread_join(downloader_thread_id, NULL);
-  mq_close(download_queue);
-  mq_unlink(QUEUENAME);
+
+  free(menu.ptr);
+  curl_multi_cleanup(multi_handle);
   endwin();
-
   return 0;
 }
 

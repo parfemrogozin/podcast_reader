@@ -13,11 +13,17 @@
     SELECTED_EPISODE = 3
   };
 
-  enum Commands
+  struct MyArray
   {
-    BACK = -1,
-    ADD_FEED = -2,
-    GET_INFO = -3,
-    SEARCH = -4
+    unsigned int count;
+    char * ptr;
+  };
+
+  struct State
+  {
+    enum Level level;
+    unsigned int highlight;
+    unsigned int rss_count;
+    unsigned int current_feed;
   };
 #endif /* PR_CONST_H_INCLUDED */

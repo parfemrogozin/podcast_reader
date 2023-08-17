@@ -32,54 +32,6 @@ void print_menu(char * menu_ptr, unsigned int menu_count, unsigned int highlight
 }
 
 
-
-int read_controls(unsigned int * highlight, unsigned int lines)
-{
-  int c = getch();
-  int choice = 0;
-
-  switch(c)
-  {
-    case KEY_UP:
-      if (*highlight > 1)
-      {
-        --*highlight;
-      }
-      break;
-
-    case KEY_DOWN:
-      if(*highlight < lines)
-      {
-        ++*highlight;
-      }
-    break;
-
-    case 10:
-      choice = *highlight;
-    break;
-
-    case 'q':
-      choice = BACK;
-    break;
-
-    case 'a':
-      choice = ADD_FEED;
-    break;
-
-    case 'i':
-      choice = GET_INFO;
-    break;
-
-    case '/':
-      choice = SEARCH;
-    break;
-
-    default:
-    break;
-  }
-return choice;
-}
-
 void show_description(char * rss_file, const int highlight)
 {
   char description[SCREENSIZE + 1];

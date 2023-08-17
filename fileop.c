@@ -5,8 +5,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <pthread.h>
-#include <mqueue.h>
 
 #include "include/pr_const.h"
 #include "include/fileop.h"
@@ -21,23 +19,42 @@
   #define _(STRING) gettext(STRING)
 #endif
 
-char READER_PATHS[4][80] = {0};
+char READER_PATHS[6][80] = {0};
 
 
-static int count_lines(FILE *fp)
+int progress_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
 {
-  unsigned int line_count  = 0;
-  int c;
+  size_t * gui_pos = (size_t *)clientp;
+  move(gui_pos[0], gui_pos[1] + 2);
+  clrtoeol();
+  mvprintw(gui_pos[0], gui_pos[1] + 2, "%d", dlnow);
+  refresh();
+  return 0;
+}
 
-  for (c = getc(fp); c != EOF; c = getc(fp))
+void set_download_destination(struct Download_data * download_data)
+{
+  strcpy(download_data->dest_dir, READER_PATHS[MUSIC_DIRECTORY]);
+  chdir(download_data->dest_dir);
+
+  char dir_artist[30+1] = {0};
+  strncpy(dir_artist, download_data->id3.artist, 30);
+  sanitize_filename(dir_artist);
+  mkdir(dir_artist, 0700);
+  strcat(download_data->dest_dir, "/");
+  strcat(download_data->dest_dir, dir_artist);
+  chdir(download_data->dest_dir);
+
+  char ord_num = 1;
+  strncpy(download_data->dest_file, download_data->id3.album, 30);
+  sanitize_filename(download_data->dest_file);
+
+  while ( access( download_data->dest_file, F_OK ) == 0 )
   {
-    if (c == '\n')
-    {
-      line_count++;
-    }
+     ord_num++;
+     download_data->dest_file[strlen(download_data->dest_file)-1] = '0' + ord_num;
   }
-  rewind(fp);
-  return line_count;
+  strcat(download_data->dest_file, ".mp3");
 }
 
 
@@ -52,7 +69,9 @@ int set_paths(void)
     strcpy(READER_PATHS[URL_LIST], getenv("HOME"));
     strcat(READER_PATHS[URL_LIST], "/.config");
   }
-  strcat(READER_PATHS[URL_LIST], "/rss_feed_list.txt");
+  strcat(READER_PATHS[URL_LIST], "/podcast_reader");
+  mkdir(READER_PATHS[URL_LIST], 0700);
+  strcat(READER_PATHS[URL_LIST], "/rss_feed_list.txt"); /* 1 */
 
   if( access( "/usr/bin/xdg-user-dir", X_OK ) == 0 )
   {
@@ -65,28 +84,45 @@ int set_paths(void)
   {
     strcpy(READER_PATHS[MUSIC_DIRECTORY], getenv("HOME"));
   }
-  strcat(READER_PATHS[MUSIC_DIRECTORY], "/Podcasts");
+  strcat(READER_PATHS[MUSIC_DIRECTORY], "/Podcasts");  /* 2 */
   mkdir(READER_PATHS[MUSIC_DIRECTORY], 0700);
 
   if (getenv("XDG_DATA_HOME"))
   {
-  strcpy(READER_PATHS[LOCALE_PATH], getenv("XDG_DATA_HOME"));
+    strcpy(READER_PATHS[LOCALE_PATH], getenv("XDG_DATA_HOME"));
   }
   else
   {
     strcpy(READER_PATHS[LOCALE_PATH], getenv("HOME"));
     strcat(READER_PATHS[LOCALE_PATH], "/.local/share");
   }
-  strcat(READER_PATHS[LOCALE_PATH], "/locale");
+  strcat(READER_PATHS[LOCALE_PATH], "/locale"); /* 3 */
   mkdir(READER_PATHS[LOCALE_PATH], 0700);
 
-  strcpy(READER_PATHS[SAVE_TEMPLATE], "/tmp/rss%d.xml");
+  if (getenv("XDG_CACHE_HOME"))
+  {
+    strcpy(READER_PATHS[CACHE_PATH], getenv("XDG_CACHE_HOME"));
+  }
+  else
+  {
+    strcpy(READER_PATHS[CACHE_PATH], getenv("HOME"));
+    strcat(READER_PATHS[CACHE_PATH], "/.cache");
+  }
+  strcat(READER_PATHS[CACHE_PATH], "/podcast_reader"); /* 4 */
+  mkdir(READER_PATHS[CACHE_PATH], 0700);
+
+  strcpy(READER_PATHS[TMP_FILE], READER_PATHS[CACHE_PATH]);
+  strcat(READER_PATHS[TMP_FILE], "/tmp.xml"); /* 5 */
+
+  strcpy(READER_PATHS[FEED_TEMPLATE], READER_PATHS[CACHE_PATH]);
+  strcat(READER_PATHS[FEED_TEMPLATE], "/rss%02d.xml"); /* 6 */
+
   return 0;
 }
 
 void add_url(void)
 {
-  char rss_url[80] = {0};
+  char rss_url[URLMAX] = {0};
   FILE *url_list;
   url_list = fopen(READER_PATHS[URL_LIST], "a");
 
@@ -100,29 +136,7 @@ void add_url(void)
   fclose(url_list);
 }
 
-
-
-/*
- * in download_file (
- *  url=0x5575e545f410 <error: Cannot access memory at address 0x5575e545f410>, filename=0x7f1e29157c40 "Timcast_IRL_545_Elon_Says_T.mp3")
-*/
-int download_file(char * url, char * filename)
-{
-  CURL * downloader;
-  FILE * tmp_file = fopen(filename, "w");
-  downloader = curl_easy_init();
-  curl_easy_setopt(downloader, CURLOPT_URL, url);
-  curl_easy_setopt(downloader, CURLOPT_FOLLOWLOCATION, 1);
-  curl_easy_setopt(downloader, CURLOPT_WRITEDATA, tmp_file);
-  curl_easy_setopt(downloader, CURLOPT_NOPROGRESS, 1);
-
-  curl_easy_perform(downloader);
-  curl_easy_cleanup(downloader);
-  fclose(tmp_file);
-  return 0;
-}
-
-void * start_downloader()
+/*void * start_downloader(void)
 {
   int run = 1;
   int ord_num;
@@ -138,23 +152,7 @@ void * start_downloader()
     if (msg_prio == 1)
     {
     request = (struct Download_data *) buffer;
-    char directory[31] = {0};
-    strncpy(directory, request->id3.artist, 30);
-    sanitize_filename(directory);
-    chdir(READER_PATHS[MUSIC_DIRECTORY]);
-    mkdir(directory, 0700);
-    chdir(directory);
 
-    ord_num = 1;
-    char filename[30+1+3+1] = {0};
-    strncpy(filename, request->id3.album, 30);
-    sanitize_filename(filename);
-    while ( access( filename, F_OK ) == 0 )
-    {
-      ord_num++;
-      filename[strlen(filename)-1] = '0' + ord_num;
-    }
-    strcat(filename, ".mp3");
 
     move(LINES-1,0);
     clrtoeol();
@@ -180,35 +178,71 @@ void * start_downloader()
   }
   mq_close (queue);
   return NULL;
-}
+}*/
 
-char * create_feed_list(unsigned int *record_count)
-{
-  int cursor_pos = 11;
-  FILE *url_list;
-  url_list = fopen(READER_PATHS[URL_LIST], "r");
-  *record_count = count_lines(url_list);
-  char feed_address[ITEMSIZE] = {0};
-  char * file_names = malloc(*record_count * ITEMSIZE);
-  for (unsigned int i = 0; i < *record_count; ++i)
-  {
-    fgets(feed_address,ITEMSIZE,url_list);
-    strtok(feed_address, "\n");
-    sprintf (file_names + ITEMSIZE * i, READER_PATHS[SAVE_TEMPLATE], i);
-    download_file(feed_address, file_names  + ITEMSIZE * i);
-    mvprintw(LINES-1, cursor_pos + i, "%s", ".");
-    refresh();
-  }
-  fclose(url_list);
-  return file_names;
-}
 
-void get_feed_list()
+int get_feed_list(void)
 {
+  int ret = 0;
   FILE *url_list;
+  char address[URLMAX];
   if( access(READER_PATHS[URL_LIST], R_OK ) == 0 )
   {
-    url_list = fopen(READER_PATHS[URL_LIST], "r");
-  }
+    size_t gui_pos[2];
 
+    CURL *curl = curl_easy_init();
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+    curl_easy_setopt(curl, CURLOPT_XFERINFODATA, gui_pos);
+    curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
+    curl_easy_setopt(curl, CURLOPT_TIMECONDITION, (long)CURL_TIMECOND_IFMODSINCE);
+
+    url_list = fopen(READER_PATHS[URL_LIST], "r");
+    unsigned int i = 0;
+    while ( fgets(address, URLMAX, url_list) != NULL )
+    {
+      char feed_file[80];
+      sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], i);
+      long last_update = 0;
+      struct stat attribute;
+      int found = stat(feed_file, &attribute);
+      if (0 ==  found)
+      {
+        last_update = (long)attribute.st_mtime;
+      }
+      FILE * tmp_file = fopen(READER_PATHS[TMP_FILE], "w");
+      address[strcspn(address, "\n")] = 0;
+      gui_pos[0] = i;
+      gui_pos[1] = strlen(address);
+      curl_easy_setopt(curl, CURLOPT_TIMEVALUE, last_update);
+      curl_easy_setopt(curl, CURLOPT_URL, address);
+      curl_easy_setopt(curl, CURLOPT_WRITEDATA, tmp_file);
+
+
+      mvprintw(gui_pos[0], 0, "%s: ", address);
+      CURLcode res = curl_easy_perform(curl);
+
+      fclose(tmp_file);
+      long unmet;
+      curl_easy_getinfo(curl, CURLINFO_CONDITION_UNMET, &unmet);
+      if (1L != unmet)
+      {
+        rename(READER_PATHS[TMP_FILE], feed_file);
+      }
+      else
+      {
+        mvprintw(gui_pos[0], gui_pos[1] + 2, "%s", _("NO CHANGE"));
+        refresh();
+      }
+
+      i++;
+    }
+    ret = i;
+    curl_easy_cleanup(curl);
+  }
+  else
+  {
+    mvprintw(0, 0, "%s", _("You have no feed yet."));
+  }
+  return ret;
 }

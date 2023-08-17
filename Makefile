@@ -23,7 +23,8 @@ install:
 	install podcast_reader $(PREFIX)/.local/bin
 	install -d $(PREFIX)/.local/share/locale/cs/LC_MESSAGES
 	install -m 644 po/cs/podcast_reader.mo $(PREFIX)/.local/share/locale/cs/LC_MESSAGES
-	install -m 600 rss_feed_list.txt $(PREFIX)/.config
+	install -d $(PREFIX)/.config/podcast_reader
+	install -m 600 rss_feed_list.txt $(PREFIX)/.config/podcast_reader
 
 uninstall:
 	$(RM) $(PREFIX)/.local/bin/podcast_reader
