@@ -93,9 +93,10 @@ int main(void)
         if ( level_change )
         {
           state.current_feed = state.highlight -1;
+          strncpy(download_data.id3.artist , menu.ptr + ITEMSIZE * state.current_feed, 29);
+          download_data.id3.artist[30] = '\0';
           state.highlight = 1;
           sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], state.current_feed);
-          strncpy(download_data.id3.artist , menu.ptr + ITEMSIZE * state.current_feed, 30);
           menu.count = count_nodes(feed_file, "item", 2);
           menu.ptr = realloc(menu.ptr, menu.count * ITEMSIZE);
           memset(menu.ptr,'\0', menu.count * ITEMSIZE);
@@ -111,7 +112,9 @@ int main(void)
     case SELECTED_EPISODE:
       sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], state.current_feed);
       strncpy(download_data.id3.album, menu.ptr + ITEMSIZE * (state.highlight - 1), 30);
-      strncpy(download_data.id3.title, menu.ptr + ITEMSIZE * (state.highlight - 1), 8);
+      download_data.id3.album[31] = '\0';
+      strncpy(download_data.id3.title, menu.ptr + ITEMSIZE * (state.highlight - 1), 30);
+      download_data.id3.title[31] = '\0';
       download_data.url = get_enclosure(feed_file, state.highlight);
 
       clear();
@@ -131,12 +134,9 @@ int main(void)
       curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
       curl_easy_setopt(curl, CURLOPT_WRITEDATA, dest_file);
       curl_easy_setopt(curl, CURLOPT_URL, download_data.url);
-      /*curl_easy_perform(curl);
-      curl_easy_cleanup(curl);
-      fclose(dest_file);*/
       curl_multi_add_handle(multi_handle, curl);
 
-      level_change = false;
+
       state.level = EPISODE_LIST;
     break;
 
@@ -144,7 +144,7 @@ int main(void)
     break;
   }
 
-    while (ERR == (key_press = getch()) )
+    while (ERR == (key_press = getch()))
     {
       curl_multi_perform(multi_handle, &active_downloads);
     }

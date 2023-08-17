@@ -1,5 +1,5 @@
 LDLIBS = `ncursesw6-config --libs` `xml2-config --libs` `curl-config --libs` -lpthread -lrt
-CFLAGS = `ncursesw6-config --cflags` `xml2-config --cflags` `curl-config --cflags`
+CFLAGS = `ncursesw6-config --cflags` `xml2-config --cflags` `curl-config --cflags` -g
 
 ifeq ($(PREFIX),)
 	PREFIX := $$HOME
