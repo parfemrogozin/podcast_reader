@@ -5,30 +5,38 @@
 void remove_symbols(char *str)
 {
   char *dest = str;
-  /* xmlGetUTF8Char () */
+  int char_len;
+
   while ( *str != '\0' )
   {
-    /*if ( (*str < 47 && *str > 0 && *str != 32 ) || (*str < 65 && *str > 57 )  || (*str < 97 && *str > 90 ) || (*str > 122) )*/
-    if ( *str < 47 && *str != 32)
+    if ( *str > 0)
     {
-      str++;
-    }
-    else if ( *str > 57 &&  *str < 65)
-    {
-      str++;
-    }
-    else if ( *str > 90  && *str < 97)
-    {
-      str++;
-    }
-    else if ( *str > 122 )
-    {
-      str++;
+      if ( *str < 47 && *str != 32) /* 32 = SPACE */
+      {
+        str++;
+      }
+      else if ( *str > 57 &&  *str < 65) /* 65 = LATIN CAPITAL LETTER A */
+      {
+        str++;
+      }
+      else if ( *str > 90  && *str < 97) /* 97 = LATIN SMALL LETTER A */
+      {
+        str++;
+      }
+      else if ( *str > 122) /* 122 = LATIN SMALL LETTER Z, 127 = <DEL> */
+      {
+        str++;
+      }
+      else /* LETTERS AND NUMBERS*/
+      {
+        *dest++ = *str++;
+      }
     }
     else
     {
       *dest++ = *str++;
     }
+
   }
   *dest = '\0';
 }
@@ -82,12 +90,6 @@ void replace_multi_space_with_single_space(char *str)
   *dest = '\0';
 }
 
-void sanitize_filename(char *str)
-{
-  remove_symbols(str);
-  replace_multi_space_with_single_space(str);
-  replace_char(str, ' ', '_');
-}
 
 int find_string_in_array(char * str_array, char * string, int start, int lines)
 {

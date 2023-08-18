@@ -32,26 +32,12 @@ int progress_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_
   return 0;
 }
 
-void set_download_destination(struct Download_data * download_data)
+void sanitize(char in_place_string[160])
 {
-  strncpy(download_data->dest_dir, READER_PATHS[MUSIC_DIRECTORY], 80);
-  chdir(download_data->dest_dir);
-
-  char dir_artist[30+1] = {0};
-  strncpy(dir_artist, download_data->id3.artist, 30);
-  dir_artist[31] = '\0';
-  sanitize_filename(dir_artist);
-  mkdir(dir_artist, 0700);
-  strcat(download_data->dest_dir, "/");
-  strcat(download_data->dest_dir, dir_artist);
-  chdir(download_data->dest_dir);
-
-  strncpy(download_data->dest_file, download_data->id3.album, 30);
-  download_data->dest_file[31] = '\0';
-  sanitize_filename(download_data->dest_file);
-  strcat(download_data->dest_file, ".mp3");
+  strip_html(in_place_string);
+  remove_symbols(in_place_string);
+  replace_multi_space_with_single_space(in_place_string);
 }
-
 
 int set_paths(void)
 {

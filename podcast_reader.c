@@ -48,8 +48,6 @@ int main(void)
 
   char feed_file[80] = {0};
 
-  struct Download_data download_data;
-
   set_paths();
   my_init_screen();
   while ( 0 == (state.rss_count = get_feed_list()) )
@@ -93,8 +91,6 @@ int main(void)
         if ( level_change )
         {
           state.current_feed = state.highlight -1;
-          strncpy(download_data.id3.artist , menu.ptr + ITEMSIZE * state.current_feed, 29);
-          download_data.id3.artist[30] = '\0';
           state.highlight = 1;
           sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], state.current_feed);
           menu.count = count_nodes(feed_file, "item", 2);
@@ -111,32 +107,28 @@ int main(void)
 
     case SELECTED_EPISODE:
       sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], state.current_feed);
-      strncpy(download_data.id3.album, menu.ptr + ITEMSIZE * (state.highlight - 1), 30);
-      download_data.id3.album[31] = '\0';
-      strncpy(download_data.id3.title, menu.ptr + ITEMSIZE * (state.highlight - 1), 30);
-      download_data.id3.title[31] = '\0';
-      download_data.url = get_enclosure(feed_file, state.highlight);
+      char feed_name_buffer[161] = {0};
+      char episode_name_buffer[161] = {0};
+      char *url = get_enclosure(feed_file, state.highlight); /* TO BE FREED*/
+      copy_single_content(feed_file, 2, "title", 1, feed_name_buffer, 160);
+      copy_single_content(feed_file, 3, "title", 1+state.highlight, episode_name_buffer, 160);
+      sanitize(feed_name_buffer);
+      sanitize(episode_name_buffer);
 
       clear();
-        mvprintw(0,0, "%s: %s", _("Podcast"), download_data.id3.artist);
-        mvprintw(1,0, "%s: %s", _("Episode"), download_data.id3.album);
-        mvprintw(2,0, "%s: %s", _("URL"), download_data.url);
+        mvprintw(0,0, "%s: %s", _("Podcast"),  feed_name_buffer);
+        mvprintw(2,0, "%s: %s", _("Episode"), episode_name_buffer);
+        mvprintw(4,0, "%s: %s", _("URL"), url);
       refresh();
 
-      set_download_destination(&download_data);
-      char full_path[120];
-      strcpy(full_path, download_data.dest_dir);
-      strcat(full_path, "/");
-      strcat(full_path, download_data.dest_file);
-      FILE * dest_file = fopen(download_data.dest_file, "w");
 
-      CURL *curl = curl_easy_init();
+      /*CURL *curl = curl_easy_init();
       curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
       curl_easy_setopt(curl, CURLOPT_WRITEDATA, dest_file);
       curl_easy_setopt(curl, CURLOPT_URL, download_data.url);
-      curl_multi_add_handle(multi_handle, curl);
+      curl_multi_add_handle(multi_handle, curl);*/
 
-
+      level_change = false;
       state.level = EPISODE_LIST;
     break;
 
