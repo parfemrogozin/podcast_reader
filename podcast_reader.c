@@ -27,7 +27,7 @@ static void my_init_screen(void)
   textdomain ("podcast_reader");
 
   initscr();
-  nodelay(stdscr, TRUE);
+  nodelay(stdscr, FALSE);
   keypad(stdscr, TRUE);
   noecho();
   cbreak();
@@ -63,7 +63,7 @@ int main(void)
   int key_press = ERR;
 
   CURLM * multi_handle = curl_multi_init();
-  int active_downloads;
+  int active_downloads = 0;
 
   do
   {
@@ -121,6 +121,8 @@ int main(void)
         mvprintw(4,0, "%s: %s", _("URL"), url);
       refresh();
 
+      nodelay(stdscr, TRUE);
+
 
       /*CURL *curl = curl_easy_init();
       curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
@@ -134,12 +136,28 @@ int main(void)
 
     default:
     break;
-  }
+    }
 
     while (ERR == (key_press = getch()))
     {
-      curl_multi_perform(multi_handle, &active_downloads);
+      CURLMcode mc;
+      mc = curl_multi_perform(multi_handle, &active_downloads);
+      if ( mc == CURLM_OK )
+      {
+        curl_multi_wait(multi_handle, NULL, 0, 100, NULL);
+        if (active_downloads == 0)
+        {
+          nodelay(stdscr, FALSE);
+        }
+      }
+      else
+      {
+        state.level = PROGRAM_EXIT;
+        fprintf(stderr, "curl_multi failed, code %d.\n", mc);
+        break;
+      }
     }
+
     switch (key_press)
     {
       case 10:
@@ -171,18 +189,19 @@ int main(void)
           break;
     }
 
-
-
-
   }
   while(state.level > PROGRAM_EXIT);
+
+
   clear();
   mvprintw(LINES - 1, 0, "%s", _("Wait for downloads..."));
   refresh();
 
   while ( active_downloads )
   {
+    int numfds;
     curl_multi_perform(multi_handle, &active_downloads);
+    curl_multi_wait(multi_handle, NULL, 0, 375, &numfds);
   }
 
 
