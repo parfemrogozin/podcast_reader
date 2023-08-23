@@ -119,6 +119,7 @@ int main(void)
 
   bool level_change = true;
   int key_press = ERR;
+  enum Command command = NO_COMMAND;
 
   curl_global_init(CURL_GLOBAL_DEFAULT);
   CURLM * multi_handle = curl_multi_init();
@@ -143,7 +144,14 @@ int main(void)
           state.highlight = state.current_feed + 1;
           level_change = false;
         }
+        if ( command == SHOW_INFO )
+        {
+          command = NO_COMMAND;
+        }
+        else
+        {
           print_menu(menu.ptr, menu.count, state.highlight);
+        }
       break;
 
     case EPISODE_LIST:
@@ -158,10 +166,15 @@ int main(void)
           read_feed(feed_file, menu.ptr);
           level_change = false;
         }
-      print_menu(menu.ptr, menu.count, state.highlight);
-
-      /*show_description(feed_file, state.highlight);*/
-
+        if ( command == SHOW_INFO )
+        {
+          show_description(feed_file, state.highlight);
+          command = NO_COMMAND;
+        }
+        else
+        {
+          print_menu(menu.ptr, menu.count, state.highlight);
+        }
     break;
 
     case SELECTED_EPISODE:
@@ -255,6 +268,10 @@ int main(void)
           state.highlight = 1;
           level_change = true;
           break;
+
+      case 'i':
+        command = SHOW_INFO;
+        break;
 
         default:
           break;

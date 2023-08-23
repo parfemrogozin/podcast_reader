@@ -11,6 +11,14 @@
     SELECTED_EPISODE = 3
   };
 
+  enum Command
+  {
+    NO_COMMAND = 0,
+    SHOW_INFO = 1,
+    ADD_FEED = 2,
+    DELETE_FEED = 3,
+  };
+
   struct MyArray
   {
     unsigned int count;

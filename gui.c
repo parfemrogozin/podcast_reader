@@ -34,7 +34,7 @@ void print_menu(char * menu_ptr, unsigned int menu_count, unsigned int highlight
 
 void show_description(char * rss_file, const int highlight)
 {
-  char description[SCREENSIZE + 1];
+  char description[SCREENSIZE + 1] = {0};
   copy_single_content(rss_file, 3, "description", highlight, description, SCREENSIZE - 1);
   strip_html(description);
   replace_multi_space_with_single_space(description);

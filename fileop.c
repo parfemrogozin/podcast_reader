@@ -117,14 +117,6 @@ void add_url(void)
   fclose(url_list);
 }
 
-/*void * start_downloader(void)
-{
-
-
-
-}*/
-
-
 int get_feed_list(void)
 {
   int ret = 0;
