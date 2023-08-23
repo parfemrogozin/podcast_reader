@@ -2,8 +2,6 @@
 #define PR_CONST_INCLUDED
   #define ITEMSIZE 81
   #define SCREENSIZE 1920
-  #define URLMAX 2048
-  #define QUEUENAME "/podcast_reader_requests"
 
   enum Level
   {
@@ -25,5 +23,13 @@
     unsigned int highlight;
     unsigned int rss_count;
     unsigned int current_feed;
+  };
+
+  struct CurlPrivate
+  {
+    char feed[31];
+    char episode[31];
+    char path[80+30+1+30+1+3+1];
+
   };
 #endif /* PR_CONST_H_INCLUDED */

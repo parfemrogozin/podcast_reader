@@ -2,9 +2,11 @@
 #include <unistd.h>
 #include <stdbool.h>
 
-
 #include <locale.h>
 #include <libintl.h>
+#include <sys/stat.h>
+
+
 
 #include <ncurses.h>
 #include <libxml/xmlreader.h>
@@ -32,6 +34,62 @@ static void my_init_screen(void)
   noecho();
   cbreak();
   curs_set(0);
+}
+
+static FILE * set_destination(struct CurlPrivate *private_data)
+{
+  strcpy(private_data->path, READER_PATHS[MUSIC_DIRECTORY]);
+
+  char feed[30+1] = {0};
+  strcpy(feed, private_data->feed);
+  replace_char(feed, ' ', '_');
+  strcat(private_data->path, feed);
+  strcat(private_data->path, "/");
+  mkdir(private_data->path, 0750);
+
+  char episode[30+1+3+1] = {0};
+  strcpy(episode, private_data->episode);
+  replace_char(episode, ' ', '_');
+  strcat(private_data->path, episode);
+  strcat(private_data->path, ".mp3");
+  FILE *dest_file = fopen(private_data->path, "w");
+  return dest_file;
+}
+
+static void postprocess(CURLM * multi_handle)
+{
+  struct CURLMsg *handle_message;
+  do
+  {
+    int waiting_messages = 0;
+    handle_message = curl_multi_info_read(multi_handle, &waiting_messages);
+    if( handle_message != NULL && (handle_message->msg == CURLMSG_DONE) )
+    {
+      CURL *easy_handle = handle_message->easy_handle;
+      curl_multi_remove_handle(multi_handle, easy_handle);
+
+      struct CurlPrivate *private;
+      curl_easy_getinfo(easy_handle, CURLINFO_PRIVATE, &private);
+      mvprintw(LINES - 1, 0, "%s: %s", _("Finished:"), private->episode);
+      refresh();
+      char filename[30+1+3+1];
+      char * end_of_path = strrchr(private->path, '/');
+      strcpy(filename, end_of_path + 1);
+      *end_of_path = '\0';
+      chdir(private->path);
+      remove_id3tags(filename);
+      add_id3tags(filename, private->feed, private->episode);
+      char split_command[120];
+      sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 -g r%%[@o,@N=1,@t=#t@N] %s", filename);
+      system(split_command);
+      unlink(filename);
+
+
+      free(private);
+      curl_easy_cleanup(easy_handle);
+    }
+  } while( handle_message != NULL );
+
 }
 
 
@@ -62,6 +120,7 @@ int main(void)
   bool level_change = true;
   int key_press = ERR;
 
+  curl_global_init(CURL_GLOBAL_DEFAULT);
   CURLM * multi_handle = curl_multi_init();
   int active_downloads = 0;
 
@@ -121,14 +180,25 @@ int main(void)
         mvprintw(4,0, "%s: %s", _("URL"), url);
       refresh();
 
+      struct CurlPrivate *private_data = calloc(1, sizeof(struct CurlPrivate));
+      strncpy(private_data->feed, feed_name_buffer, 30);
+      strncpy(private_data->episode, episode_name_buffer, 30);
+
+
+
+      FILE * dest_file = set_destination(private_data);
+
+
       nodelay(stdscr, TRUE);
 
 
-      /*CURL *curl = curl_easy_init();
+      CURL *curl = curl_easy_init();
       curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
       curl_easy_setopt(curl, CURLOPT_WRITEDATA, dest_file);
-      curl_easy_setopt(curl, CURLOPT_URL, download_data.url);
-      curl_multi_add_handle(multi_handle, curl);*/
+      curl_easy_setopt(curl, CURLOPT_URL, url);
+      curl_easy_setopt(curl, CURLOPT_PRIVATE, private_data);
+      curl_multi_add_handle(multi_handle, curl);
+      free(url);
 
       level_change = false;
       state.level = EPISODE_LIST;
@@ -140,11 +210,12 @@ int main(void)
 
     while (ERR == (key_press = getch()))
     {
-      CURLMcode mc;
-      mc = curl_multi_perform(multi_handle, &active_downloads);
-      if ( mc == CURLM_OK )
+      CURLMcode return_code_curl;
+      return_code_curl = curl_multi_perform(multi_handle, &active_downloads);
+      if ( return_code_curl == CURLM_OK )
       {
         curl_multi_wait(multi_handle, NULL, 0, 100, NULL);
+        postprocess(multi_handle);
         if (active_downloads == 0)
         {
           nodelay(stdscr, FALSE);
@@ -153,7 +224,7 @@ int main(void)
       else
       {
         state.level = PROGRAM_EXIT;
-        fprintf(stderr, "curl_multi failed, code %d.\n", mc);
+        fprintf(stderr, "curl_multi failed, code %d.\n", return_code_curl);
         break;
       }
     }
@@ -202,12 +273,13 @@ int main(void)
     int numfds;
     curl_multi_perform(multi_handle, &active_downloads);
     curl_multi_wait(multi_handle, NULL, 0, 375, &numfds);
+    postprocess(multi_handle);
   }
-
-
-  free(menu.ptr);
   curl_multi_cleanup(multi_handle);
+  curl_global_cleanup();
+  free(menu.ptr);
   endwin();
+
   return 0;
 }
 

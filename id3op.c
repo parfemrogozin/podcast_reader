@@ -107,18 +107,31 @@ int remove_id3tags(char * mp3filename)
   return 0;
 }
 
-int add_id3tags(char * mp3filename, struct id3v1 tags)
+int add_id3tags(char * mp3filename, const char * feed, const char * episode)
 {
-  char * tag = "TAG";
-  tags.genre = 186;
+  const char * tag = "TAG";
+  /* former struct -> */
+  char title[30] = {'\0'};
+  char artist[30] = {'\0'};
+  char album[30] = {'\0'};
+  char year[4] = {'\0'};
+  char comment[30] = {'\0'};
+  unsigned char genre = 186;
+  /* <- */
+
+  strncpy(artist, feed, 30);
+  strncpy(album, episode, 30);
+
   FILE *mp3file;
   mp3file = fopen(mp3filename, "a");
-  fwrite(tag, 3, 1, mp3file);
-  fwrite(&tags,sizeof(tags), 1, mp3file);
+    fwrite(tag, 3, 1, mp3file);
+    fwrite(title, sizeof(title), 1, mp3file);
+    fwrite(artist, sizeof(artist), 1, mp3file);
+    fwrite(album, sizeof(album), 1, mp3file);
+    fwrite(year, sizeof(year), 1, mp3file);
+    fwrite(comment, sizeof(comment), 1, mp3file);
+    fwrite(&genre, sizeof(genre), 1, mp3file);
   fclose(mp3file);
 
   return 0;
 }
-
-
-

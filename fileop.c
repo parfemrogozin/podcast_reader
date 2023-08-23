@@ -50,9 +50,9 @@ int set_paths(void)
     strcpy(READER_PATHS[URL_LIST], getenv("HOME"));
     strcat(READER_PATHS[URL_LIST], "/.config");
   }
-  strcat(READER_PATHS[URL_LIST], "/podcast_reader");
+  strcat(READER_PATHS[URL_LIST], "/podcast_reader/");
   mkdir(READER_PATHS[URL_LIST], 0700);
-  strcat(READER_PATHS[URL_LIST], "/rss_feed_list.txt"); /* 1 */
+  strcat(READER_PATHS[URL_LIST], "rss_feed_list.txt"); /* 1 */
 
   if( access( "/usr/bin/xdg-user-dir", X_OK ) == 0 )
   {
@@ -65,7 +65,7 @@ int set_paths(void)
   {
     strcpy(READER_PATHS[MUSIC_DIRECTORY], getenv("HOME"));
   }
-  strcat(READER_PATHS[MUSIC_DIRECTORY], "/Podcasts");  /* 2 */
+  strcat(READER_PATHS[MUSIC_DIRECTORY], "/Podcasts/");  /* 2 */
   mkdir(READER_PATHS[MUSIC_DIRECTORY], 0700);
 
   if (getenv("XDG_DATA_HOME"))
@@ -89,21 +89,21 @@ int set_paths(void)
     strcpy(READER_PATHS[CACHE_PATH], getenv("HOME"));
     strcat(READER_PATHS[CACHE_PATH], "/.cache");
   }
-  strcat(READER_PATHS[CACHE_PATH], "/podcast_reader"); /* 4 */
+  strcat(READER_PATHS[CACHE_PATH], "/podcast_reader/"); /* 4 */
   mkdir(READER_PATHS[CACHE_PATH], 0700);
 
   strcpy(READER_PATHS[TMP_FILE], READER_PATHS[CACHE_PATH]);
-  strcat(READER_PATHS[TMP_FILE], "/tmp.xml"); /* 5 */
+  strcat(READER_PATHS[TMP_FILE], "tmp.xml"); /* 5 */
 
   strcpy(READER_PATHS[FEED_TEMPLATE], READER_PATHS[CACHE_PATH]);
-  strcat(READER_PATHS[FEED_TEMPLATE], "/rss%02d.xml"); /* 6 */
+  strcat(READER_PATHS[FEED_TEMPLATE], "rss%02d.xml"); /* 6 */
 
   return 0;
 }
 
 void add_url(void)
 {
-  char rss_url[URLMAX] = {0};
+  char rss_url[2048] = {0};
   FILE *url_list;
   url_list = fopen(READER_PATHS[URL_LIST], "a");
 
@@ -119,46 +119,9 @@ void add_url(void)
 
 /*void * start_downloader(void)
 {
-  int run = 1;
-  int ord_num;
-  unsigned int msg_prio;
-  struct Download_data  * request;
-  char buffer[sizeof( struct Download_data)];
-  char split_command[240] = {0};
-  mqd_t queue = mq_open (QUEUENAME, O_RDONLY);
-
-  while (run)
-  {
-    mq_receive(queue, buffer, sizeof(struct Download_data), &msg_prio);
-    if (msg_prio == 1)
-    {
-    request = (struct Download_data *) buffer;
 
 
-    move(LINES-1,0);
-    clrtoeol();
-      printw("%s: %s", _("Downloading"), filename);
-    refresh();
 
-    download_file(request->url, filename);
-    free(request->url);
-    remove_id3tags(filename);
-    add_id3tags(filename, request->id3);
-    sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 -g r%%[@o,@N=1,@t=#t@N] %s", filename);
-    system(split_command);
-    unlink(filename);
-
-    move(LINES-1,0);
-    clrtoeol();
-    refresh();
-    }
-    else
-    {
-      run = 0;
-    }
-  }
-  mq_close (queue);
-  return NULL;
 }*/
 
 
@@ -166,7 +129,7 @@ int get_feed_list(void)
 {
   int ret = 0;
   FILE *url_list;
-  char address[URLMAX];
+  char address[2048];
   if( access(READER_PATHS[URL_LIST], R_OK ) == 0 )
   {
     size_t gui_pos[2];
@@ -180,7 +143,7 @@ int get_feed_list(void)
 
     url_list = fopen(READER_PATHS[URL_LIST], "r");
     unsigned int i = 0;
-    while ( fgets(address, URLMAX, url_list) != NULL )
+    while ( fgets(address, 2048, url_list) != NULL )
     {
       char feed_file[80];
       sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], i);

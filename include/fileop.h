@@ -1,7 +1,8 @@
 #include "id3op.h"
 #ifndef FILEOP_H_INCLUDED
 #define FILEOP_INCLUDED
-enum names_of_pahs
+
+enum names_of_paths
 {
   URL_LIST,
   MUSIC_DIRECTORY,
