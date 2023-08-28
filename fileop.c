@@ -1,10 +1,12 @@
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <curl/curl.h>
 #include <ncurses.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
 
 #include "include/pr_const.h"
 #include "include/fileop.h"
@@ -117,6 +119,42 @@ void add_url(void)
   fclose(url_list);
 }
 
+unsigned int del_url(unsigned int highlight)
+{
+  char rss_url[2048] = {0};
+  FILE *url_list = fopen(READER_PATHS[URL_LIST], "r");
+  FILE *tmp = tmpfile();
+  unsigned int lines_read = 0;
+
+  while ( fgets(rss_url, 2048, url_list) != NULL)
+  {
+    lines_read++;
+    if ( lines_read != highlight )
+    {
+      fputs(rss_url, tmp);
+    }
+    else
+    {
+      mvprintw(LINES - 1, 0, "%s %s", rss_url, _("deleted."));
+      refresh();
+    }
+  }
+  fclose(url_list);
+
+  url_list = fopen(READER_PATHS[URL_LIST], "w");
+  rewind(tmp);
+  lines_read = 0;
+  while ( fgets(rss_url, 2048, tmp) != NULL)
+  {
+    lines_read++;
+    fputs(rss_url, url_list);
+  }
+  fclose(tmp);
+  fclose(url_list);
+
+  return lines_read;
+}
+
 int get_feed_list(void)
 {
   int ret = 0;
@@ -134,11 +172,12 @@ int get_feed_list(void)
     curl_easy_setopt(curl, CURLOPT_TIMECONDITION, (long)CURL_TIMECOND_IFMODSINCE);
 
     url_list = fopen(READER_PATHS[URL_LIST], "r");
-    unsigned int i = 0;
+    unsigned int feedno = 0;
     while ( fgets(address, 2048, url_list) != NULL )
     {
+      feedno++;
       char feed_file[80];
-      sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], i);
+      sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], feedno);
       long last_update = 0;
       struct stat attribute;
       int found = stat(feed_file, &attribute);
@@ -148,7 +187,7 @@ int get_feed_list(void)
       }
       FILE * tmp_file = fopen(READER_PATHS[TMP_FILE], "w");
       address[strcspn(address, "\n")] = 0;
-      gui_pos[0] = i;
+      gui_pos[0] = feedno - 1;
       gui_pos[1] = strlen(address);
       curl_easy_setopt(curl, CURLOPT_TIMEVALUE, last_update);
       curl_easy_setopt(curl, CURLOPT_URL, address);
@@ -170,10 +209,8 @@ int get_feed_list(void)
         mvprintw(gui_pos[0], gui_pos[1] + 2, "%s", _("NO CHANGE"));
         refresh();
       }
-
-      i++;
     }
-    ret = i;
+    ret = feedno;
     curl_easy_cleanup(curl);
   }
   else

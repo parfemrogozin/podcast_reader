@@ -112,6 +112,7 @@ int main(void)
   {
     add_url();
   }
+  state.current_feed = 1;
 
   LIBXML_TEST_VERSION
   menu.count = state.rss_count;
@@ -136,16 +137,31 @@ int main(void)
           menu.count = state.rss_count;
           menu.ptr = realloc(menu.ptr, menu.count * ITEMSIZE);
           memset(menu.ptr,'\0', menu.count * ITEMSIZE);
-          for(unsigned int i = 0; i < state.rss_count; ++i)
+          for(unsigned int slot = 1; slot <= state.rss_count; ++slot)
           {
-            sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], i);
-            copy_single_content(feed_file, 2, "title", 1, menu.ptr + ITEMSIZE * i, ITEMSIZE - 1);
+            sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], slot);
+            copy_single_content(feed_file, 2, "title", 1, menu.ptr + ITEMSIZE * (slot - 1), ITEMSIZE - 1);
           }
-          state.highlight = state.current_feed + 1;
+          state.highlight = state.current_feed;
           level_change = false;
         }
         if ( command == SHOW_INFO )
         {
+          command = NO_COMMAND;
+        }
+        if ( command == DELETE_FEED )
+        {
+          state.rss_count = del_url(state.highlight);
+          char old_file[80];
+          char new_file[80];
+          sprintf(old_file, READER_PATHS[FEED_TEMPLATE], state.highlight);
+          unlink(old_file);
+          for (unsigned int feedno = state.highlight; feedno <= state.rss_count; feedno++)
+          {
+            sprintf(old_file, READER_PATHS[FEED_TEMPLATE], feedno + 1);
+            sprintf(new_file, READER_PATHS[FEED_TEMPLATE], feedno);
+            rename(old_file, new_file);
+          }
           command = NO_COMMAND;
         }
         else
@@ -157,7 +173,7 @@ int main(void)
     case EPISODE_LIST:
         if ( level_change )
         {
-          state.current_feed = state.highlight -1;
+          state.current_feed = state.highlight;
           state.highlight = 1;
           sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], state.current_feed);
           menu.count = count_nodes(feed_file, "item", 2);
@@ -271,6 +287,10 @@ int main(void)
 
       case 'i':
         command = SHOW_INFO;
+        break;
+
+      case 'd':
+        command = DELETE_FEED;
         break;
 
         default:
