@@ -133,11 +133,6 @@ unsigned int del_url(unsigned int highlight)
     {
       fputs(rss_url, tmp);
     }
-    else
-    {
-      mvprintw(LINES - 1, 0, "%s %s", rss_url, _("deleted."));
-      refresh();
-    }
   }
   fclose(url_list);
 

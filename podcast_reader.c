@@ -81,9 +81,10 @@ static void postprocess(CURLM * multi_handle)
       add_id3tags(filename, private->feed, private->episode);
       char split_command[120];
       sprintf(split_command, "mp3splt -Q -t 10.00 -o @f/@n2 -g r%%[@o,@N=1,@t=#t@N] %s", filename);
-      system(split_command);
-      unlink(filename);
-
+      if ( -1 != system(split_command) )
+      {
+        unlink(filename);
+      }
 
       free(private);
       curl_easy_cleanup(easy_handle);
@@ -145,29 +146,40 @@ int main(void)
           state.highlight = state.current_feed;
           level_change = false;
         }
-        if ( command == SHOW_INFO )
+
+        switch (command)
         {
-          command = NO_COMMAND;
+          case SHOW_INFO:
+            command = NO_COMMAND;
+            break;
+
+          case DELETE_FEED:
+            state.rss_count = del_url(state.highlight);
+            {
+              char old_file[80];
+              char new_file[80];
+              sprintf(old_file, READER_PATHS[FEED_TEMPLATE], state.highlight);
+              unlink(old_file);
+              for (unsigned int feedno = state.highlight; feedno <= state.rss_count; feedno++)
+              {
+                sprintf(old_file, READER_PATHS[FEED_TEMPLATE], feedno + 1);
+                sprintf(new_file, READER_PATHS[FEED_TEMPLATE], feedno);
+                rename(old_file, new_file);
+              }
+            }
+            nodelay(stdscr, TRUE);
+            level_change = true;
+            command = NO_COMMAND;
+            break;
+
+          case NO_COMMAND:
+
+          default:
+            print_menu(menu.ptr, menu.count, state.highlight);
+            command = NO_COMMAND;
+            break;
         }
-        if ( command == DELETE_FEED )
-        {
-          state.rss_count = del_url(state.highlight);
-          char old_file[80];
-          char new_file[80];
-          sprintf(old_file, READER_PATHS[FEED_TEMPLATE], state.highlight);
-          unlink(old_file);
-          for (unsigned int feedno = state.highlight; feedno <= state.rss_count; feedno++)
-          {
-            sprintf(old_file, READER_PATHS[FEED_TEMPLATE], feedno + 1);
-            sprintf(new_file, READER_PATHS[FEED_TEMPLATE], feedno);
-            rename(old_file, new_file);
-          }
-          command = NO_COMMAND;
-        }
-        else
-        {
-          print_menu(menu.ptr, menu.count, state.highlight);
-        }
+
       break;
 
     case EPISODE_LIST:
@@ -182,52 +194,61 @@ int main(void)
           read_feed(feed_file, menu.ptr);
           level_change = false;
         }
-        if ( command == SHOW_INFO )
+
+        switch (command)
         {
-          show_description(feed_file, state.highlight);
-          command = NO_COMMAND;
-        }
-        else
-        {
-          print_menu(menu.ptr, menu.count, state.highlight);
-        }
+          case SHOW_INFO:
+            show_description(feed_file, state.highlight);
+            command = NO_COMMAND;
+            break;
+
+          case DELETE_FEED:
+            command = NO_COMMAND;
+            break;
+
+          case NO_COMMAND:
+
+          default:
+            print_menu(menu.ptr, menu.count, state.highlight);
+            command = NO_COMMAND;
+            break;
+          }
+
     break;
 
     case SELECTED_EPISODE:
       sprintf(feed_file, READER_PATHS[FEED_TEMPLATE], state.current_feed);
-      char feed_name_buffer[161] = {0};
-      char episode_name_buffer[161] = {0};
-      char *url = get_enclosure(feed_file, state.highlight); /* TO BE FREED*/
-      copy_single_content(feed_file, 2, "title", 1, feed_name_buffer, 160);
-      copy_single_content(feed_file, 3, "title", 1+state.highlight, episode_name_buffer, 160);
-      sanitize(feed_name_buffer);
-      sanitize(episode_name_buffer);
+      {
+        char feed_name_buffer[161] = {0};
+        char episode_name_buffer[161] = {0};
+        char *url = get_enclosure(feed_file, state.highlight); /* TO BE FREED*/
+        copy_single_content(feed_file, 2, "title", 1, feed_name_buffer, 160);
+        copy_single_content(feed_file, 3, "title", 1+state.highlight, episode_name_buffer, 160);
+        sanitize(feed_name_buffer);
+        sanitize(episode_name_buffer);
 
-      clear();
-        mvprintw(0,0, "%s: %s", _("Podcast"),  feed_name_buffer);
-        mvprintw(2,0, "%s: %s", _("Episode"), episode_name_buffer);
-        mvprintw(4,0, "%s: %s", _("URL"), url);
-      refresh();
+        clear();
+          mvprintw(0,0, "%s: %s", _("Podcast"),  feed_name_buffer);
+          mvprintw(2,0, "%s: %s", _("Episode"), episode_name_buffer);
+          mvprintw(4,0, "%s: %s", _("URL"), url);
+        refresh();
 
-      struct CurlPrivate *private_data = calloc(1, sizeof(struct CurlPrivate));
-      strncpy(private_data->feed, feed_name_buffer, 30);
-      strncpy(private_data->episode, episode_name_buffer, 30);
+        struct CurlPrivate *private_data = calloc(1, sizeof(struct CurlPrivate));
+        strncpy(private_data->feed, feed_name_buffer, 30);
+        strncpy(private_data->episode, episode_name_buffer, 30);
 
+        FILE * dest_file = set_destination(private_data);
 
+        nodelay(stdscr, TRUE);
 
-      FILE * dest_file = set_destination(private_data);
-
-
-      nodelay(stdscr, TRUE);
-
-
-      CURL *curl = curl_easy_init();
-      curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-      curl_easy_setopt(curl, CURLOPT_WRITEDATA, dest_file);
-      curl_easy_setopt(curl, CURLOPT_URL, url);
-      curl_easy_setopt(curl, CURLOPT_PRIVATE, private_data);
-      curl_multi_add_handle(multi_handle, curl);
-      free(url);
+        CURL *curl = curl_easy_init();
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, dest_file);
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_PRIVATE, private_data);
+        curl_multi_add_handle(multi_handle, curl);
+        free(url);
+      }
 
       level_change = false;
       state.level = EPISODE_LIST;
@@ -237,8 +258,12 @@ int main(void)
     break;
     }
 
-    while (ERR == (key_press = getch()))
+    while ( ERR == (key_press = getch()) )
     {
+      if (level_change == true)
+      {
+          break;
+      }
       CURLMcode return_code_curl;
       return_code_curl = curl_multi_perform(multi_handle, &active_downloads);
       if ( return_code_curl == CURLM_OK )
