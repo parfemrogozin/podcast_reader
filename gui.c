@@ -1,4 +1,6 @@
 #include <ncurses.h>
+#include <string.h>
+
 
 #include "include/pr_const.h"
 #include "include/xmlop.h"

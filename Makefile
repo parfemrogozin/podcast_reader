@@ -29,6 +29,7 @@ install:
 uninstall:
 	$(RM) $(PREFIX)/.local/bin/podcast_reader
 	$(RM) $(PREFIX)/.local/share/locale/cs/LC_MESSAGES/podcast_reader.mo
+	$(RM) $(PREFIX)/.cache/podcast_reader/*.xml
 
 clean:
 	$(RM) podcast_reader po/cs/*.mo

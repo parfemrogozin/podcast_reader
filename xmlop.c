@@ -57,7 +57,12 @@ void copy_single_content(char * rss_file, const int min_depth, const char * encl
 
     if ( inside_tag )
     {
-      strncpy(free_slot, (char *) xmlTextReaderConstValue(reader), free_size); /* TODO CDATA */
+      strncpy(free_slot, (char *) xmlTextReaderConstValue(reader), free_size);
+      ret = xmlTextReaderRead(reader);
+      if ( XML_READER_TYPE_CDATA == xmlTextReaderNodeType(reader))
+      {
+        strncpy(free_slot, (char *) xmlTextReaderConstValue(reader), free_size);
+      }
       break;
     }
 
