@@ -103,20 +103,52 @@ int set_paths(void)
   return 0;
 }
 
-void add_url(void)
+static unsigned int write_from_tmp(FILE *tmp, char url_buffer[2048])
 {
-  char rss_url[2048] = {0};
-  FILE *url_list;
-  url_list = fopen(READER_PATHS[URL_LIST], "a");
+  FILE *url_list = fopen(READER_PATHS[URL_LIST], "w");
+  rewind(tmp);
+  unsigned int lines_writen = 0;
+  while ( fgets(url_buffer, 2048, tmp) != NULL)
+  {
+    lines_writen++;
+    fputs(url_buffer, url_list);
+  }
+  fclose(url_list);
+  fclose(tmp);
+
+  return lines_writen;
+}
+
+unsigned int add_url(unsigned int highlight)
+{
+  char url_buffer[2048] = {0};
+  char new_url[2048] = {0};
+
+  FILE *url_list = fopen(READER_PATHS[URL_LIST], "r");
+  FILE *tmp = tmpfile();
 
   echo();
   mvprintw(LINES-1, 0,"%s", _("Enter RSS feed address: "));
-  getstr(rss_url);
+  getstr(new_url);
+  strcat(new_url, "\n");
+  move(LINES-1, 0);
+  clrtoeol();
   noecho();
 
-  fputs(rss_url, url_list);
-  fputc('\n', url_list);
+  unsigned int lines_read = 0;
+
+  while ( fgets(url_buffer, 2048, url_list) != NULL)
+  {
+    if  (lines_read == highlight - 1 )
+    {
+      fputs(new_url, tmp);
+    }
+    fputs(url_buffer, tmp);
+    lines_read++;
+  }
   fclose(url_list);
+
+  return write_from_tmp(tmp, url_buffer);
 }
 
 unsigned int del_url(unsigned int highlight)
@@ -136,18 +168,7 @@ unsigned int del_url(unsigned int highlight)
   }
   fclose(url_list);
 
-  url_list = fopen(READER_PATHS[URL_LIST], "w");
-  rewind(tmp);
-  lines_read = 0;
-  while ( fgets(rss_url, 2048, tmp) != NULL)
-  {
-    lines_read++;
-    fputs(rss_url, url_list);
-  }
-  fclose(tmp);
-  fclose(url_list);
-
-  return lines_read;
+  return write_from_tmp(tmp, rss_url);
 }
 
 int get_feed_list(void)
@@ -213,4 +234,27 @@ int get_feed_list(void)
     mvprintw(0, 0, "%s", _("You have no feed yet."));
   }
   return ret;
+}
+
+void reoder_feeds(unsigned int highlight, unsigned int rss_count, char action)
+{
+  char old_file[80];
+  char new_file[80];
+  int offset;
+  if ('d' == action)
+  {
+    sprintf(old_file, READER_PATHS[FEED_TEMPLATE], highlight);
+    unlink(old_file);
+    offset = 1;
+  }
+  else
+  {
+    offset = -1;
+  }
+  for (unsigned int feedno = highlight; feedno <= rss_count; feedno++)
+  {
+    sprintf(old_file, READER_PATHS[FEED_TEMPLATE], feedno + offset);
+    sprintf(new_file, READER_PATHS[FEED_TEMPLATE], feedno);
+    rename(old_file, new_file);
+  }
 }

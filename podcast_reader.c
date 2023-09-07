@@ -111,7 +111,7 @@ int main(void)
   my_init_screen();
   while ( 0 == (state.rss_count = get_feed_list()) )
   {
-    add_url();
+    add_url(state.highlight);
   }
   state.current_feed = 1;
 
@@ -153,20 +153,18 @@ int main(void)
             command = NO_COMMAND;
             break;
 
+          case ADD_FEED:
+            state.rss_count = add_url(state.highlight);
+            reoder_feeds(state.highlight, state.rss_count, 'a');
+            state.rss_count = get_feed_list();
+            nodelay(stdscr, TRUE);
+            level_change = true;
+            command = NO_COMMAND;
+            break;
+
           case DELETE_FEED:
             state.rss_count = del_url(state.highlight);
-            {
-              char old_file[80];
-              char new_file[80];
-              sprintf(old_file, READER_PATHS[FEED_TEMPLATE], state.highlight);
-              unlink(old_file);
-              for (unsigned int feedno = state.highlight; feedno <= state.rss_count; feedno++)
-              {
-                sprintf(old_file, READER_PATHS[FEED_TEMPLATE], feedno + 1);
-                sprintf(new_file, READER_PATHS[FEED_TEMPLATE], feedno);
-                rename(old_file, new_file);
-              }
-            }
+            reoder_feeds(state.highlight, state.rss_count, 'd');
             nodelay(stdscr, TRUE);
             level_change = true;
             command = NO_COMMAND;
@@ -312,6 +310,10 @@ int main(void)
 
       case 'i':
         command = SHOW_INFO;
+        break;
+
+      case 'a':
+        command = ADD_FEED;
         break;
 
       case 'd':

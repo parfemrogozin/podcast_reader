@@ -1,7 +1,6 @@
 https://feeds.buzzsprout.com/164767.rss
 https://feeds.buzzsprout.com/238686.rss
+https://feeds.transistor.fm/zbytecna-valka
 https://rss.art19.com/the-victor-davis-hanson-show
 https://www.spreaker.com/show/3559959/episodes/feed
 https://rss.art19.com/your-welcome
-https://patrickcoffin.libsyn.com/rss
-https://feeds.soundcloud.com/users/soundcloud:users:372777143/sounds.rss
