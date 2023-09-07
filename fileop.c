@@ -189,6 +189,8 @@ int get_feed_list(void)
 
     url_list = fopen(READER_PATHS[URL_LIST], "r");
     unsigned int feedno = 0;
+    erase();
+    refresh();
     while ( fgets(address, 2048, url_list) != NULL )
     {
       feedno++;
